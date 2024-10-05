@@ -1,0 +1,2 @@
+# installation of local namespace packages
+-e file:src/locomotif-loconsensus --config-settings editale_mode=compat
