@@ -6,9 +6,9 @@ LOGGER = logging.getLogger(__name__)
 STEP_SIZES = np.array([[1, 1], [2, 1], [1, 2]])
 
 
-# TODO: this has to be a list of timeseries
+# TODO: this has to be a list of timeseries as input
 def calculate_similarity_matrix(
-    timeseries1: np.ndarray, timeseries2: np.ndarray
+    timeseries1: np.ndarray, timeseries2: np.ndarray, gamma: int
 ) -> np.ndarray:
     n = len(timeseries1)
     m = len(timeseries2)
@@ -17,10 +17,12 @@ def calculate_similarity_matrix(
         column_start = 0
         column_end = m
         similarities: list[int] = np.exp(
-            -1.0
+            -gamma
             * np.sum(
                 np.power(
-                    timeseries1[row, :] - timeseries2[column_start:column_end, :], 2
+                    # use column_start:column_end because of assymetry
+                    timeseries1[row, :] - timeseries2[column_start:column_end, :],
+                    2,
                 ),
                 axis=1,
             )
@@ -29,5 +31,45 @@ def calculate_similarity_matrix(
     return similarity_matrix
 
 
-def calculate_cumulative_similarity_matrix(similarity_matrix: np.ndarray) -> np.ndarray:
-    pass
+def calculate_cumulative_similarity_matrix(
+    similarity_matrix: np.ndarray, tau: float, delta_a: float, delta_m: float
+) -> np.ndarray:
+    max_vertical_step = np.max(STEP_SIZES[:, 0])
+    max_horizontal_step = np.max(STEP_SIZES[:, 1])
+    n = similarity_matrix.shape[0]
+    m = similarity_matrix.shape[1]
+    cumulative_similarity_matrix: np.ndarray = np.zeros(
+        (
+            n + max_vertical_step,
+            m + max_horizontal_step,
+        )
+    )
+
+    for row in range(n):
+        column_start = 0
+        column_end = m
+        for column in range(column_start, column_end):
+            similarity = similarity_matrix[row, column]
+            indices: np.ndarray = (
+                np.array([row + max_vertical_step, column + max_horizontal_step])
+                - STEP_SIZES
+            )
+            # look at the 3 possible steps in indices and take the max value
+            max_cumulative_similarity = np.amax(
+                np.array(
+                    [
+                        cumulative_similarity_matrix[_row, _column]
+                        for (_row, _column) in indices
+                    ]
+                )
+            )
+            if similarity < tau:
+                cumulative_similarity_matrix[
+                    row + max_vertical_step, column + max_horizontal_step
+                ] = max(0, delta_m * max_cumulative_similarity - delta_a)
+            else:
+                cumulative_similarity_matrix[
+                    row + max_vertical_step, column + max_vertical_step
+                ] = max(0, max_cumulative_similarity + similarity)
+
+    return cumulative_similarity_matrix
