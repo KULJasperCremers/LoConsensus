@@ -1,5 +1,8 @@
+import logging
+
 import numpy as np
 
+LOGGER = logging.getLogger(__name__)
 # TODO: what value for V_WIDTH?
 V_WIDTH = 2
 

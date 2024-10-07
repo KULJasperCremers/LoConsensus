@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 import utils
+from locomotif.loconsensus import path as path_class
 from locomotif.loconsensus import path_finder, visualize
 from locomotif.loconsensus import similarity_matrix as sm
 from locomotif.loconsensus import timeseries_generator as tsg
@@ -51,14 +52,17 @@ if __name__ == '__main__':
     fig.savefig('csm.png')
 
     # find the best paths
-    paths = path_finder.find_paths(csm1, STEP_SIZES, L_MIN)
-    axs = visualize.plot_local_warping_paths(axs, [path for path in paths], lw=1)
-    fig.savefig('paths.png')
+    found_paths = path_finder.find_paths(csm1, STEP_SIZES, L_MIN)
+    LOGGER.info(msg=f'Found {len(found_paths)} paths.')
 
-    ## TODO: MOVE TO PATH_FINDER
-    # paths = []
-    # for path in best_paths:
-    # rows, columns = path[:, 0], path[:, 1]
-    # path_similarities = sm1[rows, columns]
-    ## paths.append((path, path_similarities))
-    # paths.append(path)
+    # create a Path() for each path including the similarity information
+    paths = []
+    for found_path in found_paths:
+        rows, columns = found_path[:, 0], found_path[:, 1]
+        path_similarities = sm1[rows, columns]
+        paths.append(path_class.Path(found_path, path_similarities))
+
+    axs = visualize.plot_local_warping_paths(
+        axs, [path_object.path for path_object in paths], lw=1
+    )
+    fig.savefig('paths.png')
