@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 import utils
+from locomotif.loconsensus import motif_finder as mf
 from locomotif.loconsensus import path as path_class
 from locomotif.loconsensus import path_finder, visualize
 from locomotif.loconsensus import similarity_matrix as sm
