@@ -9,8 +9,8 @@ from locomotif.loconsensus import similarity_matrix as sm
 from locomotif.loconsensus import timeseries_generator as tsg
 
 logging.basicConfig(
-    level=logging.INFO,
-    # level=logging.DEBUG,
+    # level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 )
 
@@ -25,11 +25,11 @@ if __name__ == '__main__':
     LOGGER = logging.getLogger(__name__)
 
     # generate two basic timeseries for testing
-    pattern = [i for i in range(1, 101)]
-    ts1: np.ndarray = tsg.generate_timeseries(1000, pattern, 5)
+    pattern = [i for i in range(1, 11)]
+    ts1: np.ndarray = tsg.generate_timeseries(100, pattern, 2)
     ts1: np.ndarray = utils.z_normalize(ts1)
     LOGGER.debug(msg=f'timeseries 1: {ts1.flatten()}')
-    ts2: np.ndarray = tsg.generate_timeseries(1000, pattern, 5)
+    ts2: np.ndarray = tsg.generate_timeseries(100, pattern, 2)
     ts2: np.ndarray = utils.z_normalize(ts2)
     LOGGER.debug(msg=f'timeseries 2: {ts2.flatten()}')
 
@@ -53,11 +53,11 @@ if __name__ == '__main__':
     fig.savefig('csm.png')
 
     # find the best paths
-    found_paths = path_finder.find_paths(csm1, STEP_SIZES, L_MIN)
+    found_paths: list[np.ndarray] = path_finder.find_paths(csm1, STEP_SIZES, L_MIN)
     LOGGER.info(msg=f'Found {len(found_paths)} paths.')
 
     # create a Path() for each path including the similarity information
-    paths = []
+    paths: list[path_class.Path] = []
     for found_path in found_paths:
         rows, columns = found_path[:, 0], found_path[:, 1]
         path_similarities = sm1[rows, columns]
@@ -67,3 +67,5 @@ if __name__ == '__main__':
         axs, [path_object.path for path_object in paths], lw=1
     )
     fig.savefig('paths.png')
+
+    mf.find_motifs(2, len(ts1), len(ts2), paths, L_MIN, L_MAX)

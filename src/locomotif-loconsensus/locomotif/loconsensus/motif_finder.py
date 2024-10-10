@@ -9,17 +9,29 @@ LOGGER = logging.getLogger(__name__)
 
 
 def find_motifs(
-    max_amount: int, n: int, m: int
+    max_amount: int,
+    n: int,
+    m: int,
+    paths: list[path_class.Path],
+    L_MIN: int,
+    L_MAX: int,
 ) -> Generator[tuple[tuple[int, int], list[path_class.Path], np.ndarray], None, None]:
-    start_mask = np.full((n, m), True)
-    end_mask = np.full((n, m), True)
-    mask = np.full((n, m), True)
+    max_length = max(n, m)
+    start_mask = np.full(max_length, True)
+    end_mask = np.full(max_length, True)
+    mask = np.full(max_length, False)
     amount = 0
     while amount < max_amount:
-        if np.all(mask) or not np.any(start_mask) or not np.any(mask):
+        if np.all(mask) or not np.any(start_mask) or not np.any(end_mask):
             break
 
         start_mask[mask] = False
         end_mask[mask] = False
 
-    (b, e), best_fitness, fitness = cf.find_candidates()
+        best_candidate, best_fitness = cf.find_candidates(
+            start_mask, end_mask, mask, paths, L_MIN, L_MAX
+        )
+
+        LOGGER.debug(
+            msg=f'Best candidate: {best_candidate}\nBest fitness: {best_fitness}'
+        )
