@@ -146,3 +146,17 @@ def mask_vicinity(
     mask[row_next - V_WIDTH : row_next + V_WIDTH + 1, column_next] = True
     mask[row_next, column_next - V_WIDTH : column_next + V_WIDTH + 1] = True
     return mask
+
+
+def find_induced_paths(start_index, end_index, paths, mask):
+    induced_paths = []
+    for path in paths:
+        if path.column_start <= start_index and end_index <= path.column_end:
+            start_column = path.find_column(start_index)
+            end_column = path.find_column(end_index - 1)
+            motif_start = path[start_column][0]
+            motif_end = path[end_column][0] + 1
+            if not np.any(mask[motif_start:motif_end]):
+                induced_path = np.copy(path.path[start_column : end_column + 1])
+                induced_paths.append(induced_path)
+    return induced_paths

@@ -9,8 +9,8 @@ from locomotif.loconsensus import similarity_matrix as sm
 from locomotif.loconsensus import timeseries_generator as tsg
 
 logging.basicConfig(
-    # level=logging.INFO,
-    level=logging.DEBUG,
+    level=logging.INFO,
+    # level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 )
 
@@ -49,8 +49,8 @@ if __name__ == '__main__':
 
     fig, axs, _ = visualize.plot_similarity_matrix(ts1, ts2, sm1)
     fig.savefig('sm.png')
-    fig, axs, _ = visualize.plot_similarity_matrix(ts1, ts2, csm1)
-    fig.savefig('csm.png')
+    # fig, axs, _ = visualize.plot_similarity_matrix(ts1, ts2, csm1)
+    # fig.savefig('csm.png')
 
     # find the best paths
     found_paths: list[np.ndarray] = path_finder.find_paths(csm1, STEP_SIZES, L_MIN)
@@ -63,9 +63,29 @@ if __name__ == '__main__':
         path_similarities = sm1[rows, columns]
         paths.append(path_class.Path(found_path, path_similarities))
 
+    # axs = visualize.plot_local_warping_paths(axs, [path_object.path for path_object in paths], lw=1)
+    # fig.savefig('paths.png')
+
+    motif_sets = []
+    for representative, motif_set in mf.find_motifs(
+        3, len(ts1), len(ts2), paths, L_MIN, L_MAX
+    ):
+        motif_sets.append((representative, motif_set))
+    LOGGER.info(msg=f'Found {len(motif_sets)} motif sets.')
+
+    representative, motif_set = motif_sets[0]
+    b, e = representative
+
     axs = visualize.plot_local_warping_paths(
         axs, [path_object.path for path_object in paths], lw=1
     )
-    fig.savefig('paths.png')
-
-    mf.find_motifs(2, len(ts1), len(ts2), paths, L_MIN, L_MAX)
+    axs = visualize.plot_local_warping_paths(
+        axs,
+        path_finder.find_induced_paths(
+            b, e, paths, np.full(max(len(ts1), len(ts2)), False)
+        ),
+        lw=3,
+    )
+    axs[3].axvline(b, lw=1, c='k', ls='--')
+    axs[3].axvline(e, lw=1, c='k', ls='--')
+    fig.savefig('induced_paths.png')

@@ -4,6 +4,7 @@ from typing import Generator
 import numpy as np
 from locomotif.loconsensus import candidate_finder as cf
 from locomotif.loconsensus import path as path_class
+from locomotif.loconsensus import path_finder as pf
 
 LOGGER = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ def find_motifs(
     paths: list[path_class.Path],
     L_MIN: int,
     L_MAX: int,
-) -> Generator[tuple[tuple[int, int], list[path_class.Path], np.ndarray], None, None]:
+) -> Generator[tuple[tuple[int, int], list[tuple[int, int]]], None, None]:
     max_length = max(n, m)
     start_mask = np.full(max_length, True)
     end_mask = np.full(max_length, True)
@@ -35,3 +36,20 @@ def find_motifs(
         LOGGER.debug(
             msg=f'Best candidate: {best_candidate}\nBest fitness: {best_fitness}'
         )
+
+        if best_fitness == 0.0:
+            break
+
+        (start_index, end_index) = best_candidate
+        motif_set = [
+            (path[0][0], path[len(path) - 1][0] + 1)
+            for path in pf.find_induced_paths(start_index, end_index, paths, mask)
+        ]
+
+        # TODO: overlap parmater?
+        for motif_start, motif_end in motif_set:
+            l = motif_end - motif_start
+            mask[motif_start + int(0.0 * l) - 1 : motif_end - int(0.0 * l)] = True
+
+        amount += 1
+        yield best_candidate, motif_set
