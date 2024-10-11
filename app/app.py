@@ -1,12 +1,13 @@
 import logging
+from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import utils
 from locomotif.loconsensus import motif_finder as mf
 from locomotif.loconsensus import path as path_class
 from locomotif.loconsensus import path_finder, visualize
 from locomotif.loconsensus import similarity_matrix as sm
-from locomotif.loconsensus import timeseries_generator as tsg
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,22 +17,26 @@ logging.basicConfig(
 
 GAMMA = 1
 STEP_SIZES = np.array([[1, 1], [2, 1], [1, 2]])
-# dependent on the length of the pattern!
-L_MIN = 5
-L_MAX = 10
-
 
 if __name__ == '__main__':
     LOGGER = logging.getLogger(__name__)
 
-    # generate two basic timeseries for testing
-    pattern = [i for i in range(1, 11)]
-    ts1: np.ndarray = tsg.generate_timeseries(100, pattern, 2)
-    ts1: np.ndarray = utils.z_normalize(ts1)
-    LOGGER.debug(msg=f'timeseries 1: {ts1.flatten()}')
-    ts2: np.ndarray = tsg.generate_timeseries(100, pattern, 2)
-    ts2: np.ndarray = utils.z_normalize(ts2)
-    LOGGER.debug(msg=f'timeseries 2: {ts2.flatten()}')
+    # data = Path('./data/mitdb_patient214.csv')
+    # file1 = open(data)
+    # ts1 = np.array([line.split(',') for line in file1.readlines()], dtype=np.double)
+    # ts1 = (ts1 - np.mean(ts1, axis=0)) / np.std(ts1, axis=0)
+    # ts2 = ts1.copy()
+    # fs = 360
+    # L_MIN = int(0.6 * fs)
+    # L_MAX = int(1 * fs)
+
+    data1 = np.load('./data/cleanlines/id1_scenario1.npy')
+    data2 = np.load('./data/cleanlines/id2_scenario1.npy')
+    ts1 = data1 if len(data1) < len(data2) else data2
+    ts2 = data1 if len(data1) > len(data2) else data1
+    sample_frequency = 60
+    L_MIN = int(1 * sample_frequency)
+    L_MAX = int(3 * sample_frequency)
 
     # calculate the similarity matrix
     sm1: np.ndarray = sm.calculate_similarity_matrix(ts1, ts2, GAMMA)
@@ -47,10 +52,8 @@ if __name__ == '__main__':
     )
     LOGGER.info(msg='Cumulative similarity matrix calculated.')
 
-    fig, axs, _ = visualize.plot_similarity_matrix(ts1, ts2, sm1)
+    fig, axs, _ = visualize.plot_sm(ts1, ts2, sm1)
     fig.savefig('sm.png')
-    # fig, axs, _ = visualize.plot_similarity_matrix(ts1, ts2, csm1)
-    # fig.savefig('csm.png')
 
     # find the best paths
     found_paths: list[np.ndarray] = path_finder.find_paths(csm1, STEP_SIZES, L_MIN)
@@ -63,29 +66,14 @@ if __name__ == '__main__':
         path_similarities = sm1[rows, columns]
         paths.append(path_class.Path(found_path, path_similarities))
 
-    # axs = visualize.plot_local_warping_paths(axs, [path_object.path for path_object in paths], lw=1)
-    # fig.savefig('paths.png')
-
     motif_sets = []
+    # max_amount = None
+    max_amount = 5
     for representative, motif_set in mf.find_motifs(
-        3, len(ts1), len(ts2), paths, L_MIN, L_MAX
+        max_amount, len(ts1), len(ts2), paths, L_MIN, L_MAX
     ):
         motif_sets.append((representative, motif_set))
     LOGGER.info(msg=f'Found {len(motif_sets)} motif sets.')
 
-    representative, motif_set = motif_sets[0]
-    b, e = representative
-
-    axs = visualize.plot_local_warping_paths(
-        axs, [path_object.path for path_object in paths], lw=1
-    )
-    axs = visualize.plot_local_warping_paths(
-        axs,
-        path_finder.find_induced_paths(
-            b, e, paths, np.full(max(len(ts1), len(ts2)), False)
-        ),
-        lw=3,
-    )
-    axs[3].axvline(b, lw=1, c='k', ls='--')
-    axs[3].axvline(e, lw=1, c='k', ls='--')
-    fig.savefig('induced_paths.png')
+    fig, axs = visualize.plot_motif_sets(ts1, ts2, motif_sets)
+    fig.savefig('motifs.png')

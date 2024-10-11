@@ -22,7 +22,7 @@ def find_motifs(
     end_mask = np.full(max_length, True)
     mask = np.full(max_length, False)
     amount = 0
-    while amount < max_amount:
+    while max_amount is None or amount < max_amount:
         if np.all(mask) or not np.any(start_mask) or not np.any(end_mask):
             break
 
@@ -46,10 +46,13 @@ def find_motifs(
             for path in pf.find_induced_paths(start_index, end_index, paths, mask)
         ]
 
-        # TODO: overlap parmater?
+        # TODO: overlap parameter?
         for motif_start, motif_end in motif_set:
-            l = motif_end - motif_start
-            mask[motif_start + int(0.0 * l) - 1 : motif_end - int(0.0 * l)] = True
+            motif_length = motif_end - motif_start
+            mask[
+                motif_start + int(0.0 * motif_length) - 1 : motif_end
+                - int(0.0 * motif_length)
+            ] = True
 
         amount += 1
         yield best_candidate, motif_set
