@@ -19,7 +19,7 @@ PACKAGE_INIT_FILES = $(dir $(wildcard ./src/*/__init__.py))
 BUILD_FOLDER_FILES = $(wildcard ./_build/wheel/*)
 
 ifeq ($(MAKE_OS), Windows)
-	CREATE_ENV_CMD=python -m venv $(VENV_NAME)
+	CREATE_ENV_CMD=py -$(PYTHON_VERSION) -m venv $(VENV_NAME)
 	PYTHON=$(VENV_NAME)\Scripts\python
 	ACTIVATE=$(VENV_NAME)\Scripts\activate
 	TOML_ADAPT=$(VENV_NAME)\Scripts\toml-adapt
