@@ -10,8 +10,12 @@ Repository for master thesis implementation of a [LoCoMotif](https://github.com/
     - Run the scripts with the command: `python .app/app.py`
 
 # LoConsensus with mitdb_patient214.csv
-## Similarity matrix:
-![similarity matrix](./mitdbsm.png)
+## Similarity matrix LoCoMotif:
+![loco similarity matrix](./mitdbsm.png)
+## Similarity matrix LoConsensus:
+![loconsensus similarity matrix](./mitdb2sm.png)
 
-## Found motifs:
-![found motifs](./mitdbmotifs.png)
+## Found motifs LoCoMotif:
+![loco found motifs](./mitdbmotifs.png)
+## Found motifs LoConsensus:
+![loconsensus found motifs](./mitdb2motifs.png)
