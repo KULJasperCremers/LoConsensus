@@ -53,7 +53,7 @@ if __name__ == '__main__':
         sm1, STEP_SIZES, tau, delta_a, delta_m
     )
     LOGGER.info(msg='Cumulative similarity matrix calculated.')
-l
+
     fig, axs, _ = visualize.plot_sm(ts2, ts1, sm1)
     fig.savefig('sm.png')
 
