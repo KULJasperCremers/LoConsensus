@@ -8,3 +8,10 @@ Repository for master thesis implementation of a [LoCoMotif](https://github.com/
     - Run the command: `make install` (python>=3.12.* required to be installed with the py python launcher)
     - Activate the virtual environment
     - Run the scripts with the command: `python .app/app.py`
+
+# LoConsensus with mitdb_patient214.csv
+## Similarity matrix:
+![similarity matrix](./mitdbsm.png)
+
+## Found motifs:
+![found motifs](./mitdbmotifs.png)
