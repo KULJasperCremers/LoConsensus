@@ -8,11 +8,23 @@ class Path:
         self.cumulative_path_similarity = np.concatenate(
             (np.array([0, 0]), np.cumsum(self.path_similarities))
         )
-        self.row_start = path[0][0]
-        self.row_end = path[len(path) - 1][0] + 1
-        self.column_start = path[0][1]
-        self.column_end = path[len(path) - 1][1] + 1
         self.construct_indices(path)
+
+    @property
+    def row_start(self):
+        return self.path[0][0]
+
+    @property
+    def row_end(self):
+        return self.path[-1][0] + 1
+
+    @property
+    def column_start(self):
+        return self.path[0][1]
+
+    @property
+    def column_end(self):
+        return self.path[-1][1] + 1
 
     def construct_indices(self, path: np.ndarray) -> None:
         current_row = self.row_start
