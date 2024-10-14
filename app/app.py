@@ -24,7 +24,7 @@ if __name__ == '__main__':
     file1 = open(data)
     ts1 = np.array([line.split(',') for line in file1.readlines()], dtype=np.double)
     ts1 = (ts1 - np.mean(ts1, axis=0)) / np.std(ts1, axis=0)
-    ts2 = ts1.copy()
+    ts2 = np.concatenate([ts1, ts1], axis=0)
     fs = 360
     L_MIN = int(0.6 * fs)
     L_MAX = int(1 * fs)
@@ -40,7 +40,8 @@ if __name__ == '__main__':
     # L_MAX = int(10 * sample_frequency)
 
     # calculate the similarity matrix
-    sm1: np.ndarray = sm.calculate_similarity_matrixV1(ts1, ts2, GAMMA)
+    assert len(ts2) > len(ts1)
+    sm1: np.ndarray = sm.calculate_similarity_matrixV1(ts2, ts1, GAMMA)
     LOGGER.info(msg='Similarity matrix calculated.')
 
     # calculate the cumulative similarity matrix
@@ -52,8 +53,8 @@ if __name__ == '__main__':
         sm1, STEP_SIZES, tau, delta_a, delta_m
     )
     LOGGER.info(msg='Cumulative similarity matrix calculated.')
-
-    fig, axs, _ = visualize.plot_sm(ts1, ts2, sm1)
+l
+    fig, axs, _ = visualize.plot_sm(ts2, ts1, sm1)
     fig.savefig('sm.png')
 
     # find the best paths from the cumulative similarity matrix
@@ -74,10 +75,10 @@ if __name__ == '__main__':
     )
     # max_amount = 5
     for representative, motif_set in mf.find_motifsV1(
-        max_amount, len(ts1), len(ts2), paths, L_MIN, L_MAX
+        max_amount, len(ts2), len(ts1), paths, L_MIN, L_MAX
     ):
         motif_sets.append((representative, motif_set))
     LOGGER.info(msg=f'Found {len(motif_sets)} motif sets.')
 
-    fig, axs = visualize.plot_motif_sets(ts1, ts2, motif_sets)
+    fig, axs = visualize.plot_motif_sets(ts2, ts1, motif_sets)
     fig.savefig('motifs.png')
