@@ -10,16 +10,11 @@ def calculate_similarity_matrixV1(
     timeseries1: np.ndarray, timeseries2: np.ndarray, GAMMA: int
 ) -> np.ndarray:
     """Calculate the similarity matrix between two timeseries using specified GAMMA value."""
-    n = len(timeseries1)
-    m = len(timeseries2)
-    similarity_matrix = np.full((n, m), -np.inf)
-    for row in range(n):
-        squared_difference = np.sum(
-            np.power(timeseries1[row, np.newaxis, :] - timeseries2, 2), axis=1
-        )
-        similarities = np.exp(-GAMMA * squared_difference)
-        similarity_matrix[row, :] = similarities
-    return similarity_matrix
+    squared_differences = np.sum(
+        (timeseries1[:, np.newaxis, :] - timeseries2[np.newaxis, :, :]) ** 2, axis=2
+    )
+    similarities = np.exp(-GAMMA * squared_differences)
+    return similarities
 
 
 def calculate_cumulative_similarity_matrixV1(

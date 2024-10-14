@@ -2,11 +2,23 @@ import numpy as np
 
 
 class Path:
+    """Represents a warping path between two timeseries segments, including similarity
+    information.
+
+    Attributes:
+        - path: the path as an array of (row, column) indices.
+        - path_similarities: the similarity values along the path.
+        - cumulative_path_similarity: the cumulative sum of similarities along the path.
+        - row_indices: mapping from timeseries row indices to path indices.
+        - column_indices: mapping from timeseries column indices to path indices.
+
+    """
+
     def __init__(self, path: np.ndarray, path_similarities: np.ndarray):
         self.path = path
         self.path_similarities = path_similarities
         self.cumulative_path_similarity = np.concatenate(
-            (np.array([0, 0]), np.cumsum(self.path_similarities))
+            (np.array([0]), np.cumsum(self.path_similarities))
         )
         self.construct_indices(path)
 
@@ -27,6 +39,7 @@ class Path:
         return self.path[-1][1] + 1
 
     def construct_indices(self, path: np.ndarray) -> None:
+        """Contructs mappings from timeseries indices to path indices."""
         current_row = self.row_start
         current_column = self.column_start
 
@@ -53,11 +66,14 @@ class Path:
         self.row_indices = row_indices
         self.column_indices = column_indices
 
-    def find_row(self, row):
+    def find_row(self, row: int) -> int:
+        """Find the index in the path corresponding to the given row timeseries index."""
         return self.row_indices[row - self.row_start]
 
-    def find_column(self, column):
+    def find_column(self, column: int) -> int:
+        """Find the index in the path corresponding to the given column timeseries index."""
         return self.column_indices[column - self.column_start]
 
-    def __getitem__(self, row):
-        return self.path[row, :]
+    def __getitem__(self, index: int) -> np.ndarray:
+        """Get the (row, column) pair at a specific index in the path."""
+        return self.path[index, :]

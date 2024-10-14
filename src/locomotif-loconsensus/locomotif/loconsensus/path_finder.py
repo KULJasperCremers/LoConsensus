@@ -11,6 +11,7 @@ V_WIDTH = 2
 def find_pathsV1(
     cumulative_similarity_matrix: np.ndarray, STEP_SIZES: np.ndarray, L_MIN: int
 ) -> list[np.ndarray]:
+    """Identify the best warping paths in the cumulative similarity matrix."""
     max_vertical_step = np.max(STEP_SIZES[:, 0])
     max_horizontal_step = np.max(STEP_SIZES[:, 1])
 
@@ -87,6 +88,7 @@ def max_warping_pathV1(
     max_horizontal_step: int,
     max_vertical_step: int,
 ) -> np.ndarray:
+    """Trace back the maximum warping path from a given position in the csm."""
     path = []
     # continue as long as the indices are within bounds
     while (
@@ -119,17 +121,10 @@ def max_warping_pathV1(
     return np.array(path)
 
 
-def mask_pathV0(
-    path: np.ndarray, mask: np.ndarray, max_horizontal_step: int, max_vertical_step: int
-) -> np.ndarray:
-    for row, column in path:
-        mask[row + max_horizontal_step, column + max_vertical_step] = True
-    return mask
-
-
 def mask_pathV1(
     path: np.ndarray, mask: np.ndarray, max_horizontal_step: int, max_vertical_step: int
 ) -> np.ndarray:
+    """Update the mask to include the positions covered by the given path."""
     rows, columns = path[:, 0], path[:, 1]
     mask[rows + max_horizontal_step, columns + max_vertical_step] = True
     return mask
@@ -138,6 +133,7 @@ def mask_pathV1(
 def mask_vicinityV0(
     path: np.ndarray, mask: np.ndarray, max_horizontal_step: int, max_vertical_step: int
 ) -> np.ndarray:
+    """Update the mask to include the vicinity around the given path."""
     (row_start, column_start) = path[0] + np.array(
         (max_vertical_step, max_horizontal_step)
     )
