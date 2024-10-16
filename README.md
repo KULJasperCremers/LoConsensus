@@ -19,3 +19,6 @@ Repository for master thesis implementation of a [LoCoMotif](https://github.com/
 ![loco found motifs](./mitdbmotifs.png)
 ## Found motifs LoConsensus:
 ![loconsensus found motifs](./mitdb2motifs.png)
+
+## Foudn paths LoConsensus:
+![loconsensus found paths](./paths.png)

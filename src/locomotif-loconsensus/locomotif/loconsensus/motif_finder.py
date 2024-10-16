@@ -19,7 +19,9 @@ def find_motifsV1(
     paths: list[path_class.Path],
     L_MIN: int,
     L_MAX: int,
-) -> Generator[tuple[tuple[int, int], list[tuple[int, int]]], None, None]:
+) -> Generator[
+    tuple[tuple[int, int], list[path_class.Path], list[tuple[int, int]]], None, None
+]:
     """Generate motifs by finding and masking the best candidates based on fitness scores."""
     # determine the max length since the two timeseries are no longer equal
     max_length = max(n, m)
@@ -38,7 +40,7 @@ def find_motifsV1(
         end_mask &= ~mask
 
         best_candidate, best_fitness = cf.find_candidatesV1(
-            start_mask, end_mask, mask, paths, L_MIN, L_MAX
+            start_mask, end_mask, mask, paths, L_MIN, L_MAX, OVERLAP
         )
 
         LOGGER.debug(
@@ -50,8 +52,8 @@ def find_motifsV1(
             break
 
         (start_index, end_index) = best_candidate
-        induces_paths = pf.find_induced_paths(start_index, end_index, paths, mask)
-        motif_set = [(path[0][0], path[-1][0] + 1) for path in induces_paths]
+        induced_paths = pf.find_induced_paths(start_index, end_index, paths, mask)
+        motif_set = [(path[0][0], path[-1][0] + 1) for path in induced_paths]
 
         for motif_start, motif_end in motif_set:
             motif_length = motif_end - motif_start
@@ -70,4 +72,4 @@ def find_motifsV1(
             mask[start_index:end_index] = True
 
         amount += 1
-        yield best_candidate, motif_set
+        yield best_candidate, induced_paths, motif_set

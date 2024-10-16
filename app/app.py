@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import utils
 from locomotif.loconsensus import motif_finder as mf
 from locomotif.loconsensus import path as path_class
@@ -20,24 +21,17 @@ STEP_SIZES = np.array([[1, 1], [2, 1], [1, 2]])
 if __name__ == '__main__':
     LOGGER = logging.getLogger(__name__)
 
-    data = Path('./data/mitdb_patient214.csv')
-    file1 = open(data)
-    ts1 = np.array([line.split(',') for line in file1.readlines()], dtype=np.double)
-    ts1 = (ts1 - np.mean(ts1, axis=0)) / np.std(ts1, axis=0)
-    ts2 = np.concatenate([ts1, ts1], axis=0)
-    fs = 360
-    L_MIN = int(0.6 * fs)
-    L_MAX = int(1 * fs)
-
-    # data1 = np.load('./data/cleanlines/id1_scenario1.npy')
-    # data2 = np.load('./data/cleanlines/id2_scenario1.npy')
-    # if len(data1) > len(data2):
-    # ts1, ts2 = data2, data1
-    # else:
-    # ts1, ts2 = data1, data2
-    # sample_frequency = 60
-    # L_MIN = int(3 * sample_frequency)
-    # L_MAX = int(10 * sample_frequency)
+    data1 = np.load('./id1.npy', allow_pickle=True)
+    # data1 = pd.DataFrame(data1, columns=['x', 'y'])
+    data2 = np.load('./als1.npy', allow_pickle=True)
+    # data2 = pd.DataFrame(data2, columns=['x', 'y'])
+    if len(data1) > len(data2):
+        ts1, ts2 = data2, data1
+    else:
+        ts1, ts2 = data1, data2
+    sample_frequency = 30
+    L_MIN = int(3 * sample_frequency)
+    L_MAX = int(10 * sample_frequency)
 
     # calculate the similarity matrix
     assert len(ts2) > len(ts1)
@@ -53,7 +47,7 @@ if __name__ == '__main__':
         sm1, STEP_SIZES, tau, delta_a, delta_m
     )
     LOGGER.info(msg='Cumulative similarity matrix calculated.')
-l
+
     fig, axs, _ = visualize.plot_sm(ts2, ts1, sm1)
     fig.savefig('sm.png')
 
@@ -68,17 +62,27 @@ l
         path_similarities = sm1[rows, columns]
         paths.append(path_class.Path(found_path, path_similarities))
 
+    # visualize the local warping paths
+    axs = visualize.plot_local_warping_paths(axs, [path.path for path in paths], lw=1)
+
     # find motifs in the paths
     motif_sets: list[tuple[np.ndarray, list[np.ndarray]]] = []
     max_amount = (
         None  # set to a specific number if you want to limit the number of motif sets
     )
     # max_amount = 5
-    for representative, motif_set in mf.find_motifsV1(
+    for representative, induced_paths, motif_set in mf.find_motifsV1(
         max_amount, len(ts2), len(ts1), paths, L_MIN, L_MAX
     ):
         motif_sets.append((representative, motif_set))
+        # visualize the representative and the induced paths from the found motif set
+        axs = visualize.plot_local_warping_paths(axs, induced_paths, lw=3)
+        axs[3].axvline(representative[0], c='k', ls='--')
+        axs[3].axvline(representative[1], c='k', ls='--')
     LOGGER.info(msg=f'Found {len(motif_sets)} motif sets.')
 
+    fig.savefig('paths.png')
+
+    # visualize the motif sets TODO: show the left timeseries and motifs next to eachother
     fig, axs = visualize.plot_motif_sets(ts2, ts1, motif_sets)
     fig.savefig('motifs.png')
