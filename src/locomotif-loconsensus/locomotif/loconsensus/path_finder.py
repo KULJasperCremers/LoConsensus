@@ -2,7 +2,7 @@ import numpy as np
 from locomotif.loconsensus import path as path_class
 
 # TODO: what value for V_WIDTH?
-V_WIDTH = 5
+V_WIDTH = 3
 
 
 def find_pathsV1(
