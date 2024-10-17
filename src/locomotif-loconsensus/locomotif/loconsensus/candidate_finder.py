@@ -1,11 +1,5 @@
-import logging
-
 import numpy as np
 from locomotif.loconsensus import path as path_class
-
-LOGGER = logging.getLogger(__name__)
-
-OVERLAP = 0.0
 
 
 # TODO: keep_fitness?
@@ -16,6 +10,7 @@ def find_candidatesV1(
     paths: list[path_class.Path],
     L_MIN: int,
     L_MAX: int,
+    OVERLAP: float,
 ):
     """Identify the best candidate motif within specified masks and paths using fitness
     evaluation.

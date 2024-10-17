@@ -1,72 +1,55 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-SMALL_SIZE = 10
-MEDIUM_SIZE = 12
-BIG_SIZE = 14
 
+def plot_motif_sets(ts1, ts2, column_motif_sets, row_motif_sets):
+    FONT_SIZE = 8
+    # get the amount of columns required for the plot
+    plot_columns = 0
+    for _, motif_set in column_motif_sets + row_motif_sets:
+        if len(motif_set) > plot_columns:
+            plot_columns = len(motif_set)
 
-def plot_motif_sets(ts1, ts2, motif_sets, gt=None, dimension_names=None, legend=True):
-    if dimension_names is None:
-        dimension_names = [f'dim {d+1}' for d in range(ts1.shape[1])]
+    plot_rows = len(column_motif_sets) + len(row_motif_sets)
+    fig, axs = plt.subplots(plot_rows, plot_columns + 1, sharey=True)
 
-    n = len(ts2)
-    fig, axs = plt.subplots(
-        len(motif_sets) + 1,
-        1,
-        figsize=(12, (len(motif_sets) + 1) * 2),
-        sharex=True,
-        sharey=True,
-    )
+    for i, motif_set in enumerate(column_motif_sets + row_motif_sets, start=0):
+        (representative_start, representative_end), motifs = motif_set
+        # plot the representative from the main POV
+        axs[i][0].set_prop_cycle(None)
+        axs[i][0].set_xticks([])
+        axs[i][0].set_xticklabels([])
+        (main_ts, title) = (
+            (ts1, 'Column POV') if i < len(column_motif_sets) else (ts2, 'Row POV')
+        )
+        axs[i][0].set_title(title, size=FONT_SIZE)
+        axs[i][0].plot(
+            range(representative_start, representative_end),
+            main_ts[representative_start:representative_end, :],
+            alpha=1,
+            lw=1,
+        )
+        for j in range(1, plot_columns + 1):
+            # plot the motif from the time-warped POV
+            axs[i][j].set_prop_cycle(None)
+            axs[i][j].set_xticks([])
+            axs[i][j].set_xticklabels([])
+            if j > len(motifs):
+                axs[i][j].set_visible(False)
+                continue
 
-    if np.array(axs).ndim == 0:
-        axs = [axs]
-
-    # axs[0].set_prop_cycle(cycler(color=["tab:blue", "tab:green", "tab:red"]))
-
-    axs[0].plot(range(len(ts2)), ts2, lw=1.5)
-    if legend:
-        axs[0].legend(dimension_names, fontsize=SMALL_SIZE)
-    axs[0].set_xlim((0, n))
-
-    if gt is not None:
-        plot_ground_truth_ax(axs[0], gt, n)
-
-    for i, motif_set in enumerate(motif_sets):
-        if type(motif_set) is tuple:
-            _, motif_set = motif_set
-        axs[i + 1].set_title(f'Motif Set {i+1}, k: {len(motif_set)}', fontsize=BIG_SIZE)
-        for s_m, e_m in motif_set:
-            # axs[i+1].set_prop_cycle(cycler(color=["tab:blue", "tab:green", "tab:red"]))
-            axs[i + 1].set_prop_cycle(None)
-
-            axs[i + 1].plot(range(s_m, e_m), ts1[s_m:e_m, :], alpha=1, lw=1.5)
-            axs[i + 1].axvline(x=s_m, c='k', linestyle=':', lw=0.25)
-            axs[i + 1].axvline(x=e_m, c='k', linestyle=':', lw=0.25)
+            start, end = motifs[j - 1]
+            projected_ts = ts2 if i < len(column_motif_sets) else ts1
+            axs[i][j].set_title(f'Motif {j}', size=FONT_SIZE)
+            axs[i][j].plot(
+                range(start, end),
+                projected_ts[start:end, :],
+                alpha=1,
+                lw=1,
+            )
 
     plt.tight_layout()
     return fig, axs
-
-
-def plot_ground_truth_ax(ax, gt, n):
-    for key in gt.keys():
-        for s, e in gt[key]:
-            ax.axvline(x=s, c='k', linestyle=':', lw=0.25)
-            ax.axvline(x=e, c='k', linestyle=':', lw=0.25)
-
-            text_x = (s + ((e - s) // 2)) / float(n)
-            text_y = 0.90
-            ax.text(
-                text_x,
-                text_y,
-                str(key),
-                horizontalalignment='center',
-                verticalalignment='center',
-                transform=ax.transAxes,
-                fontsize=MEDIUM_SIZE,
-            )
-    plt.tight_layout()
-    return ax
 
 
 def plot_sm(
@@ -161,7 +144,11 @@ def plot_sm(
     return fig, ax, cax
 
 
-def plot_local_warping_paths(axs, paths, **kwargs):
+def plot_local_warping_paths(axs, paths, direction=None, **kwargs):
     for p in paths:
-        axs[3].plot(p[:, 1], p[:, 0], 'r', **kwargs)
+        if direction == 'column':
+            axs[3].plot(p[:, 1], p[:, 0], 'r', **kwargs)
+        elif direction == 'row':
+            axs[3].plot(p[:, 1], p[:, 0], 'g', **kwargs)
+
     return axs
