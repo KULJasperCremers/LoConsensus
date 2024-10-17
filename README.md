@@ -8,3 +8,15 @@ Repository for master thesis implementation of a [LoCoMotif](https://github.com/
     - Run the command: `make install` (python>=3.12.* required to be installed with the py python launcher)
     - Activate the virtual environment
     - Run the scripts with the command: `python .app/app.py`
+
+## Similarity matrices for Column and Row POVs:
+![Column POV](./smcolumn.png) ![Row POV](./smrow.png)
+
+## Found paths for both POVs:
+![Column paths](./pathscolumn.png) ![Row paths](./pathsrow.png)
+
+## Foumd motifs for both POVs:
+![Column motifs](./motifscolumn.png) ![Row motifs](./motifsrow.png)
+
+## Motifs comparison:
+![Motifs comparison](./motifs.png)
