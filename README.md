@@ -12,10 +12,7 @@ Repository for master thesis implementation of a [LoCoMotif](https://github.com/
 ## Similarity matrices for Column and Row POVs:
 ![Column POV](./smcolumn.png) ![Row POV](./smrow.png)
 
-## Found paths for both POVs:
-![Column paths](./pathscolumn.png) ![Row paths](./pathsrow.png)
-
-## Foumd motifs for both POVs:
+## Found paths and motifs for both POVs:
 ![Column motifs](./motifscolumn.png) ![Row motifs](./motifsrow.png)
 
 ## Motifs comparison:
