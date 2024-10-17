@@ -1,8 +1,4 @@
-import logging
-
 import numpy as np
-
-LOGGER = logging.getLogger(__name__)
 
 
 # TODO: this has to be a list of timeseries as input

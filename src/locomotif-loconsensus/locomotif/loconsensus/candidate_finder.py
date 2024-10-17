@@ -1,9 +1,5 @@
-import logging
-
 import numpy as np
 from locomotif.loconsensus import path as path_class
-
-LOGGER = logging.getLogger(__name__)
 
 
 # TODO: keep_fitness?

@@ -1,11 +1,8 @@
-import logging
-
 import numpy as np
 from locomotif.loconsensus import path as path_class
 
-LOGGER = logging.getLogger(__name__)
 # TODO: what value for V_WIDTH?
-V_WIDTH = 2
+V_WIDTH = 5
 
 
 def find_pathsV1(
