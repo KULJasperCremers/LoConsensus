@@ -1,4 +1,5 @@
 import logging
+import pickle
 from pathlib import Path
 
 import numpy as np
@@ -17,15 +18,30 @@ GAMMA = 1
 STEP_SIZES = np.array([[1, 1], [2, 1], [1, 2]])
 
 if __name__ == '__main__':
-    data1 = np.load('./data/id1.npy', allow_pickle=True)
-    data2 = np.load('./data/als1.npy', allow_pickle=True)
+    # with open('./data/scenario_data.pkl', 'rb') as f:
+    # scenario_data = pickle.load(f)
+    with open('./data/patient_data_scaled.pkl', 'rb') as f:
+        patient_data = pickle.load(f)
+
+    data1 = [
+        df[['x', 'y', 'z']].to_numpy()
+        for df in patient_data['ALS01']
+        if df['scenario'].iloc[0] == 'scenario1' and df['time'].iloc[0] == 'time1'
+    ][0]
+
+    data2 = [
+        df[['x', 'y', 'z']].to_numpy()
+        for df in patient_data['ALS02']
+        if df['scenario'].iloc[0] == 'scenario1' and df['time'].iloc[0] == 'time1'
+    ][0]
+
     if len(data1) > len(data2):
         ts1, ts2 = data2, data1
     else:
         ts1, ts2 = data1, data2
     sample_frequency = 30
-    L_MIN = int(5 * sample_frequency)
-    L_MAX = int(25 * sample_frequency)
+    L_MIN = int(3 * sample_frequency)
+    L_MAX = int(10 * sample_frequency)
 
     # calculate the similarity matrix in both directions
     sm_column: np.ndarray = sm.calculate_similarity_matrixV1(ts2, ts1, GAMMA)

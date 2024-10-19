@@ -11,7 +11,7 @@ def plot_motif_sets(ts1, ts2, column_motif_sets, row_motif_sets):
             plot_columns = len(motif_set)
 
     plot_rows = len(column_motif_sets) + len(row_motif_sets)
-    fig, axs = plt.subplots(plot_rows, plot_columns + 1, sharey=True)
+    fig, axs = plt.subplots(plot_rows, plot_columns + 1, sharey=True, squeeze=False)
 
     for i, motif_set in enumerate(column_motif_sets + row_motif_sets, start=0):
         (representative_start, representative_end), motifs = motif_set
