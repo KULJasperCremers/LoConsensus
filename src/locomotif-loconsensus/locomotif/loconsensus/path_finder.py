@@ -161,7 +161,7 @@ def mask_vicinityV0(
     return mask
 
 
-def find_induced_paths(
+def find_induced_pathsV0(
     start_index: int, end_index: int, paths: list[path_class.Path], mask: np.ndarray
 ) -> list[path_class.Path]:
     """Find paths induced by given start and end indices that do not overlap with masked
@@ -181,4 +181,19 @@ def find_induced_paths(
                 # copy the relevant path segment and add it to the induced paths
                 induced_path = np.copy(path.path[start_column : end_column + 1])
                 induced_paths.append(induced_path)
+    return induced_paths
+
+
+def find_consensus_induced_pathsV0(
+    start_index: int, end_index: int, paths: list[path_class.Path]
+) -> list[path_class.Path]:
+    """Find paths induced by given start and end indices for consensus motifs."""
+    induced_paths = []
+    for path in paths:
+        # check if the path includes the specified index range
+        if path.column_start <= start_index and end_index <= path.column_end:
+            start_column = path.find_column(start_index)
+            end_column = path.find_column(end_index - 1)
+            induced_path = np.copy(path.path[start_column : end_column + 1])
+            induced_paths.append(induced_path)
     return induced_paths

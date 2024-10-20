@@ -1,4 +1,6 @@
+import glob
 import logging
+import os
 import pickle
 from itertools import combinations
 
@@ -44,17 +46,19 @@ if __name__ == '__main__':
 
     data3 = [
         df[['x', 'y', 'z']].to_numpy()
-        for df in patient_data['als03']
+        for df in patient_data['ALS03']
         if df['scenario'].iloc[0] == 'scenario1' and df['time'].iloc[0] == 'time1'
     ][0]
+
     data4 = [
         df[['x', 'y', 'z']].to_numpy()
-        for df in patient_data['als04']
+        for df in patient_data['ALS04']
         if df['scenario'].iloc[0] == 'scenario1' and df['time'].iloc[0] == 'time1'
     ][0]
+
     data5 = [
         df[['x', 'y', 'z']].to_numpy()
-        for df in patient_data['als05']
+        for df in patient_data['ALS05']
         if df['scenario'].iloc[0] == 'scenario1' and df['time'].iloc[0] == 'time1'
     ][0]
 
@@ -68,7 +72,8 @@ if __name__ == '__main__':
     comparison_representatives: list[list[ConsensusMotifRepresentative]] = []
 
     # (n * (n - 1)) / 2 comparisons
-    timeseries_list: list[np.ndarray] = [data1, data2, data3, data4, data5]
+    timeseries_list: list[np.ndarray] = [data1, data2, data3]
+    # timeseries_list: list[np.ndarray] = [data1, data2, data3, data4, data5]
     n = len(timeseries_list)
     for comparison, (ts1, ts2) in enumerate(combinations(timeseries_list, 2)):
         logger.info(msg=f'Executing comparison {comparison+1}:')
@@ -149,7 +154,7 @@ if __name__ == '__main__':
         comparison_representatives.append(motif_representatives)
 
     logger.info(
-        msg=f'Found representatives in {len(comparison_representatives)} out of {len(timeseries_list)} comparisons.'
+        msg=f'Found representatives in {len(comparison_representatives)} out of {int((len(timeseries_list) * (len(timeseries_list) - 1)) / 2)} comparisons.'
     )
 
     logger.info(
@@ -157,10 +162,14 @@ if __name__ == '__main__':
     )
 
     # find consensus motifs with the comparison paths and representatives
-    consensus_motifs: list[ConsensusMotifRepresentative] = cmf.find_consensus_motifsV0(
+    consensus_motifs: list[ConsensusMotifRepresentative] = cmf.find_consensus_motifsV1(
         comparison_paths, comparison_representatives
     )
 
     logger.info(msg=f'Found {len(consensus_motifs)} consensus motifs.')
 
+    # remove the old plots and replot found consensus motifs
+    files = glob.glob('./plots/consensus_motifs/*')
+    for file in files:
+        os.remove(file)
     vis.plot_consensus_motifs(consensus_motifs)

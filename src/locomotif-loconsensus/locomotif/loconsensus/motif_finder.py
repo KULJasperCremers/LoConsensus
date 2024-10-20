@@ -88,7 +88,7 @@ def find_motifs_representativesV1(
             break
 
         (start_index, end_index) = best_candidate
-        induced_paths = pf.find_induced_paths(
+        induced_paths = pf.find_induced_pathsV0(
             start_index, end_index, current_paths, current_mask
         )
         motif_set = [(path[0][0], path[-1][0] + 1) for path in induced_paths]

@@ -1,6 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
-from locomotif.loconsensus import ConsensusMotif
 
 
 def plot_consensus_motifs(consensus_motifs):
@@ -53,7 +51,7 @@ def plot_consensus_motifs(consensus_motifs):
                     spine.set_linewidth(1)
 
         plt.tight_layout()
-        fig.savefig(f'consensus_motifs{i+1}.png')
+        fig.savefig(f'./plots/consensus_motifs/consensus_motifs{i+1}.png')
         plt.close()
 
 
