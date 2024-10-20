@@ -2,7 +2,6 @@ import numpy as np
 from locomotif.loconsensus import path as path_class
 
 
-# TODO: keep_fitness?
 def find_candidatesV1(
     start_mask: np.ndarray,
     end_mask: np.ndarray,

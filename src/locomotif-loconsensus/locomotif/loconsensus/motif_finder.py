@@ -8,7 +8,7 @@ from locomotif.loconsensus import path_finder as pf
 OVERLAP = 0.0
 
 
-def find_motifsV1(
+def find_motifs_representativesV1(
     max_amount: int,
     n: int,
     m: int,
@@ -17,7 +17,7 @@ def find_motifsV1(
     L_MIN: int,
     L_MAX: int,
 ) -> Generator[
-    tuple[tuple[int, int], list[path_class.Path], list[tuple[int, int]], str],
+    tuple[tuple[int, int], list[path_class.Path], list[tuple[int, int]], str, float],
     None,
     None,
 ]:
@@ -75,12 +75,14 @@ def find_motifsV1(
             current_paths = paths
             current_mask = column_mask
             current_length = n
+            best_fitness = column_best_fitness
             pov = 'column'
         elif row_best_fitness >= column_best_fitness and row_best_fitness > 0.0:
             best_candidate = row_best_candidate
             current_paths = mirrored_paths
             current_mask = row_mask
             current_length = m
+            best_fitness = row_best_fitness
             pov = 'row'
         else:
             break
@@ -108,4 +110,4 @@ def find_motifsV1(
             current_mask[start_index:end_index] = True
 
         amount += 1
-        yield best_candidate, induced_paths, motif_set, pov
+        yield best_candidate, induced_paths, motif_set, pov, best_fitness

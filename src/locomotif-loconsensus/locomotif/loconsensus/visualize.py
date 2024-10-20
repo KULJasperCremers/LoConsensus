@@ -1,5 +1,60 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from locomotif.loconsensus import ConsensusMotif
+
+
+def plot_consensus_motifs(consensus_motifs):
+    FONT_SIZE = 8
+    # get the amount of columns required for the plot
+    for i, cm in enumerate(consensus_motifs):
+        plot_columns = len(cm.motif_set) + len(cm.consensus_motif_set)
+
+        fig, axs = plt.subplots(1, plot_columns + 1, sharey=True, squeeze=True)
+
+        (representative_start, representative_end) = cm.representative
+        axs[0].set_prop_cycle(None)
+        axs[0].set_xticks([])
+        axs[0].set_xticklabels([])
+        axs[0].set_title('Representative', size=FONT_SIZE)
+        axs[0].plot(
+            range(representative_start, representative_end),
+            cm.representative_ts[representative_start:representative_end, :],
+            alpha=1,
+            lw=1,
+        )
+        for j in range(1, plot_columns + 1):
+            axs[j].set_prop_cycle(None)
+            axs[j].set_xticks([])
+            axs[j].set_xticklabels([])
+
+            if j <= len(cm.motif_set):
+                start, end = cm.motif_set[j - 1]
+                axs[j].set_title(f'Motif {j}', size=FONT_SIZE)
+                axs[j].plot(
+                    range(start, end),
+                    cm.motif_ts[start:end, :],
+                    alpha=1,
+                    lw=1,
+                )
+                for spine in axs[j].spines.values():
+                    spine.set_edgecolor('cyan')
+                    spine.set_linewidth(1)
+            else:
+                start, end = cm.consensus_motif_set[j - len(cm.motif_set) - 1]
+                axs[j].set_title(f'Cmotif {j - len(cm.motif_set)}', size=FONT_SIZE)
+                axs[j].plot(
+                    range(start, end),
+                    cm.consensus_ts[start:end, :],
+                    alpha=1,
+                    lw=1,
+                )
+                for spine in axs[j].spines.values():
+                    spine.set_edgecolor('magenta')
+                    spine.set_linewidth(1)
+
+        plt.tight_layout()
+        fig.savefig(f'consensus_motifs{i+1}.png')
+        plt.close()
 
 
 def plot_motif_sets(ts1, ts2, column_motif_sets, row_motif_sets):

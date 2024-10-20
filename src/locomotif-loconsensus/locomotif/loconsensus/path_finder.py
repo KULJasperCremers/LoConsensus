@@ -2,10 +2,10 @@ import numpy as np
 from locomotif.loconsensus import path as path_class
 
 # TODO: what value for V_WIDTH?
-V_WIDTH = 3
+V_WIDTH = 10
 
 
-def find_pathsV1(
+def find_warping_pathsV1(
     cumulative_similarity_matrix: np.ndarray, STEP_SIZES: np.ndarray, L_MIN: int
 ) -> list[np.ndarray]:
     """Identify the best warping paths in the cumulative similarity matrix."""
@@ -58,7 +58,7 @@ def find_pathsV1(
                 max_vertical_step,
             )
 
-            # updat ethe mask to include the found path
+            # update the mask to include the found path
             mask: np.ndarray = mask_pathV1(
                 path, mask, max_horizontal_step, max_vertical_step
             )

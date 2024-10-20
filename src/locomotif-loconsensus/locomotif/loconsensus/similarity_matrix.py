@@ -1,7 +1,6 @@
 import numpy as np
 
 
-# TODO: this has to be a list of timeseries as input
 def calculate_similarity_matrixV1(
     timeseries1: np.ndarray, timeseries2: np.ndarray, GAMMA: int
 ) -> np.ndarray:
