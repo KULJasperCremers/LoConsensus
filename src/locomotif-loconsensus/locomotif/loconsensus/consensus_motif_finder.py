@@ -26,27 +26,19 @@ def tuple_indexer_comparison_paths(
     return index
 
 
-def process_representative_POV_into_consensus_motifs(
-    consensus_motifs,
-    representative,
-    comparison_paths_tuple_index,
-    start_index,
-    end_index,
-    direction,
-) -> None:
-    """Process a representative based on the POV and create ConsenusMotifRepresentatives."""
-    # Column POV specific indexing and attributes
-    if direction == 'column':
-        representative_ts = representative.comparison_pair[1]
-        motif_ts_tuple_index = 0
-        consensus_ts_tuple_index = 0
-        paths_attr = 'paths'
-    # Row POV specific indexing and attributes
-    elif direction == 'row':
-        representative_ts = representative.comparison_pair[0]
-        motif_ts_tuple_index = 1
-        consensus_ts_tuple_index = 1
-        paths_attr = 'mirrored_paths'
+def process_representative_POV_into_consensus_results(
+    comparison_paths_tuple_index: defaultdict[
+        tuple[float, ...], list[PathsRepresentative]
+    ],
+    representative_ts: np.ndarray,
+    motif_ts: np.ndarray,
+    consensus_ts_tuple_index: int,
+    paths_attr: str,
+    start_index: int,
+    end_index: int,
+) -> list[tuple[list[tuple[int, int]], np.ndarray]]:
+    """Process a representative based on the POV and return all consensus results."""
+    processing_consensus_results = []
 
     # retrieve the relevant PathRepresentative objects based on the representative
     relevant_paths_representatives = comparison_paths_tuple_index.get(
@@ -57,9 +49,7 @@ def process_representative_POV_into_consensus_motifs(
         # retrieve the consensus timeseries based on the indexer
         consensus_ts = paths_representative.comparison_pair[consensus_ts_tuple_index]
         # ensure we only find consensus induced paths, and not again induced paths
-        if not np.array_equal(
-            consensus_ts, representative.comparison_pair[motif_ts_tuple_index]
-        ):
+        if not np.array_equal(consensus_ts, motif_ts):
             paths = getattr(paths_representative, paths_attr)
             consensus_induced_paths = pf.find_consensus_induced_pathsV0(
                 start_index, end_index, paths
@@ -68,16 +58,9 @@ def process_representative_POV_into_consensus_motifs(
                 (path[0][0], path[-1][0] + 1) for path in consensus_induced_paths
             ]
             if consensus_motif_set:
-                consensus_motif = ConsensusMotifRepresentative(
-                    representative=representative.representative,
-                    representative_ts=representative_ts,
-                    direction=direction,
-                    motif_set=representative.motif_set,
-                    motif_ts=representative.comparison_pair[motif_ts_tuple_index],
-                    consensus_motif_set=consensus_motif_set,
-                    consensus_ts=consensus_ts,
-                )
-                consensus_motifs.append(consensus_motif)
+                processing_consensus_results.append((consensus_motif_set, consensus_ts))
+
+    return processing_consensus_results
 
 
 def find_consensus_motifsV1(
@@ -96,18 +79,55 @@ def find_consensus_motifsV1(
     comparison_paths_tuple_index = tuple_indexer_comparison_paths(comparison_paths)
 
     # TODO: limit the amount of representatives searched for consensus motifs
-    limit = 10
-    # for representative in sorted_representatives:
-    for representative in sorted_representatives[:limit]:
+    # limit = 10
+    # for representative in sorted_representatives[:limit]:
+    for representative in sorted_representatives:
         (start_index, end_index) = representative.representative
         direction = representative.direction
-        process_representative_POV_into_consensus_motifs(
-            consensus_motifs,
-            representative,
+        # Column POV specific indexing and attributes
+        if direction == 'column':
+            representative_ts = representative.comparison_pair[1]
+            motif_ts = representative.comparison_pair[0]
+            consensus_ts_tuple_index = 0
+            paths_attr = 'paths'
+        # Row POV specific indexing and attributes
+        elif direction == 'row':
+            representative_ts = representative.comparison_pair[0]
+            motif_ts = representative.comparison_pair[1]
+            consensus_ts_tuple_index = 1
+            paths_attr = 'mirrored_paths'
+
+        consensus_results = process_representative_POV_into_consensus_results(
             comparison_paths_tuple_index,
+            representative_ts,
+            motif_ts,
+            consensus_ts_tuple_index,
+            paths_attr,
             start_index,
             end_index,
-            direction,
         )
+
+        # no consensus results for this representative
+        if not consensus_results:
+            continue
+
+        # aggregate the consensus results
+        consensus_motif_set_list = []
+        consensus_ts_list = []
+        for consensus_motif_set, consensus_ts in consensus_results:
+            consensus_motif_set_list.append(consensus_motif_set)
+            consensus_ts_list.append(consensus_ts)
+
+        consensus_motif = ConsensusMotifRepresentative(
+            representative=representative.representative,
+            fitness=representative.fitness,
+            representative_ts=representative_ts,
+            direction=direction,
+            motif_set=representative.motif_set,
+            motif_ts=motif_ts,
+            consensus_motif_set_list=consensus_motif_set_list,
+            consensus_ts_list=consensus_ts_list,
+        )
+        consensus_motifs.append(consensus_motif)
 
     return consensus_motifs

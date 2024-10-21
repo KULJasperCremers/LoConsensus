@@ -72,9 +72,10 @@ if __name__ == '__main__':
     comparison_representatives: list[list[ConsensusMotifRepresentative]] = []
 
     # (n * (n - 1)) / 2 comparisons
-    timeseries_list: list[np.ndarray] = [data1, data2, data3]
-    # timeseries_list: list[np.ndarray] = [data1, data2, data3, data4, data5]
+    # timeseries_list: list[np.ndarray] = [data1, data2, data3]
+    timeseries_list: list[np.ndarray] = [data1, data2, data3, data4, data5]
     n = len(timeseries_list)
+    logger.info(msg=f'Performing {int(n * (n - 1) / 2)} comparisons in total.\n')
     for comparison, (ts1, ts2) in enumerate(combinations(timeseries_list, 2)):
         logger.info(msg=f'Executing comparison {comparison+1}:')
         # calculate the similarity matrix in both directions = Column POV and Row POV
@@ -131,7 +132,6 @@ if __name__ == '__main__':
         max_amount = None
         for (
             representative,
-            induced_paths,
             motif_set,
             direction,
             best_fitness,

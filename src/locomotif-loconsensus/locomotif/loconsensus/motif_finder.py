@@ -17,7 +17,7 @@ def find_motifs_representativesV1(
     L_MIN: int,
     L_MAX: int,
 ) -> Generator[
-    tuple[tuple[int, int], list[path_class.Path], list[tuple[int, int]], str, float],
+    tuple[tuple[int, int], list[tuple[int, int]], str, float],
     None,
     None,
 ]:
@@ -110,4 +110,4 @@ def find_motifs_representativesV1(
             current_mask[start_index:end_index] = True
 
         amount += 1
-        yield best_candidate, induced_paths, motif_set, pov, best_fitness
+        yield best_candidate, motif_set, pov, best_fitness
