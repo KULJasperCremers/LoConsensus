@@ -1,0 +1,7 @@
+matplotlib>=2.2.3
+numba>=0.60.0
+numpy<2.1
+joblib>=1.4.2
+dtai-locomotif>=0.1.0
+scipy>=1.14.1
+pandas>=2.2.3
