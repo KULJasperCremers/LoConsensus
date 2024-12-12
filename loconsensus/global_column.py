@@ -3,7 +3,7 @@ import numpy as np
 from numba import boolean, float32, float64, int32, njit, typed, types
 
 
-class ConsensusColumn:
+class GlobalColumn:
     def __init__(self, cindex, global_offsets, l_min, l_max):
         self.global_offsets = global_offsets
         self.global_n = global_offsets[-1]
@@ -12,9 +12,13 @@ class ConsensusColumn:
         self._column_paths = None
 
         self.mask = np.full(self.global_n, False)
-        # TODO: check if these bound the full column?
         self.start_offset = global_offsets[cindex]
         self.end_offset = global_offsets[cindex + 1]
+
+    def update_mask(self, bm, em, overlap):
+        self.mask[bm + int(overlap * (em - bm)) - 1 : em - int(overlap * (em - bm))] = (
+            True
+        )
 
     def candidate_finder(self, smask, emask, overlap, keep_fitnesses):
         (b, e), best_fitness, fitnesses = _find_best_candidate(
@@ -28,9 +32,7 @@ class ConsensusColumn:
             overlap,
             keep_fitnesses,
         )
-
-        print(f'candidate: ({b},{e}), best fitness: {best_fitness}')
-        print()
+        return (b, e), best_fitness, fitnesses
 
     def append_paths(self, paths, offset_indices):
         if self._column_paths is None:
@@ -39,9 +41,10 @@ class ConsensusColumn:
         row_start = self.global_offsets[offset_indices[0][0]]
         col_start = self.global_offsets[offset_indices[1][0]]
         for path in paths:
-            gpath = gpath_class.GlobalPath(
-                np.array(path.path + [row_start, col_start], dtype=np.int32), path.sim
-            )
+            gpath = np.zeros((len(path), len(path)), dtype=np.int32)
+            gpath[:, 0] = np.copy(path.path[:, 0]) + row_start
+            gpath[:, 1] = np.copy(path.path[:, 1]) + col_start
+            gpath = gpath_class.GlobalPath(gpath, path.sim)
             self._column_paths.append(gpath)
 
     def append_mpaths(self, mpaths, offset_indices):
@@ -51,74 +54,25 @@ class ConsensusColumn:
         mcol_start = self.global_offsets[offset_indices[0][0]]
         for mpath in mpaths:
             # TODO: Daan???
-            gpath = gpath_class.GlobalPath(
-                np.array(mpath.path + [mrow_start, mcol_start], dtype=np.int32),
-                mpath.sim,
-            )
+            gpath = np.zeros((len(mpath), len(mpath)), dtype=np.int32)
+            gpath[:, 0] = np.copy(mpath.path[:, 0]) + mrow_start
+            gpath[:, 1] = np.copy(mpath.path[:, 1]) + mcol_start
+            gpath = gpath_class.GlobalPath(gpath, mpath.sim)
             self._column_paths.append(gpath)
 
-    # TODO: local paths?
-    def induced_paths(self, b, e, mask=None):
-        if mask is None:
-            # TODO: local n has to be used here???
-            mask = np.full(len(self.ts), False)
-
+    def induced_paths(self, b, e):
         induced_paths = []
-        for p in self._paths:
-            if p.j1 <= b and e <= p.jl:
-                kb, ke = p.find_j(b), p.find_j(e - 1)
+        for p in self._column_paths:
+            if p.gj1 <= b and e <= p.gjl:
+                kb, ke = p.find_gj(b), p.find_gj(e - 1)
                 bm, em = p[kb][0], p[ke][0] + 1
-                if not np.any(mask[bm:em]):
+                if not np.any(self.mask[bm:em]):
                     induced_path = np.copy(p.path[kb : ke + 1])
                     induced_paths.append(induced_path)
 
+        print(f'len ip: {len(induced_paths)}')
+
         return induced_paths
-
-    def find_best_motif_sets(
-        self, nb=None, start_mask=None, end_mask=None, overlap=0.0
-    ):
-        n = self.global_n
-        # handle masks
-        if start_mask is None:
-            start_mask = np.full(n, True)
-        if end_mask is None:
-            end_mask = np.full(n, True)
-
-        assert 0.0 <= overlap and overlap <= 0.5
-        assert start_mask.shape == (n,)
-        assert end_mask.shape == (n,)
-
-        # iteratively find best motif sets
-        current_nb = 0
-        mask = np.full(n, False)
-        while nb is None or current_nb < nb:
-            if np.all(mask) or not np.any(start_mask) or not np.any(end_mask):
-                break
-
-            start_mask[mask] = False
-            end_mask[mask] = False
-
-            (b, e), best_fitness, fitnesses = _find_best_candidate(
-                start_mask,
-                end_mask,
-                mask,
-                paths=self._paths,
-                l_min=self.l_min,
-                l_max=self.l_max,
-                overlap=overlap,
-                keep_fitnesses=False,
-            )
-
-            if best_fitness == 0.0:
-                break
-
-            motif_set = vertical_projections(self.induced_paths(b, e, mask))
-            for bm, em in motif_set:
-                l = em - bm
-                mask[bm + int(overlap * l) - 1 : em - int(overlap * l)] = True
-
-            current_nb += 1
-            yield (b, e), motif_set, fitnesses
 
 
 @njit(
@@ -186,12 +140,12 @@ def _find_best_candidate(
             emask = jls >= ge
             pmask = smask & emask
 
-            # TODO: ???
-            if sum(pmask) < 2:
-                break
-            ## If there are not paths that cross both the vertical line through b and e, skip the candidate.
-            # if not np.any(pmask[1:]):
+            ## TODO: ???
+            # if sum(pmask) < 2:
             # break
+            # If there are not paths that cross both the vertical line through b and e, skip the candidate.
+            if not np.any(pmask[1:]):
+                break
 
             for p in np.flatnonzero(pmask):
                 path = paths[p]
@@ -205,12 +159,12 @@ def _find_best_candidate(
                 ):  # or es[p] - bs[p] < l_min or es[p] - bs[p] > l_max:
                     pmask[p] = False
 
-            # TODO: ???
-            if sum(pmask) < 2:
+            ## TODO: ???
+            # if sum(pmask) < 2:
+            #    break
+            # If the candidate only matches with itself, skip it.
+            if not np.any(pmask[1:]):
                 break
-            ## If the candidate only matches with itself, skip it.
-            # if not np.any(pmask[1:]):
-            # break
 
             # Sort bs and es on bs such that overlaps can be calculated efficiently
             bs_ = bs[pmask]
@@ -229,15 +183,16 @@ def _find_best_candidate(
             if np.any(overlaps > overlap * len_[:-1]):
                 continue
 
+            # TODO: diagonaal score hier???
             # Calculate normalized coverage
             coverage = np.sum(es_ - bs_) - np.sum(overlaps)
-            n_coverage = (coverage - (e - b)) / float(n)
+            n_coverage = (coverage - (ge - gb)) / float(n)
 
             # Calculate normalized score
             score = 0
             for p in np.flatnonzero(pmask):
                 score += paths[p].cumsim[kes[p] + 1] - paths[p].cumsim[kbs[p]]
-            n_score = (score - (e - b)) / float(np.sum(kes[pmask] - kbs[pmask] + 1))
+            n_score = (score - (ge - gb)) / float(np.sum(kes[pmask] - kbs[pmask] + 1))
 
             # Calculate the fitness value
             fit = 0.0
@@ -249,12 +204,12 @@ def _find_best_candidate(
 
             # Update best fitness
             if fit > best_fitness:
-                best_candidate = (b, e)
+                best_candidate = (gb, ge)
                 best_fitness = fit
 
             # Store fitness if necessary
             if keep_fitnesses:
-                fitnesses.append((b, e, fit, n_coverage, n_score))
+                fitnesses.append((gb, ge, fit, n_coverage, n_score))
 
     fitnesses = (
         np.array(fitnesses, dtype=np.float32)
@@ -262,11 +217,3 @@ def _find_best_candidate(
         else np.empty((0, 5), dtype=np.float32)
     )
     return best_candidate, best_fitness, fitnesses
-
-
-def vertical_projections(paths):
-    return [(p[0][0], p[len(p) - 1][0] + 1) for p in paths]
-
-
-def horizontal_projections(paths):
-    return [(p[0][1], p[len(p) - 1][1] + 1) for p in paths]

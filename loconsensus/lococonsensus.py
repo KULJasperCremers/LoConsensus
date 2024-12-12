@@ -3,7 +3,7 @@ import numpy as np
 from numba import boolean, float32, float64, int32, njit, typed, types
 
 
-def get_loconsensus_instance(ts1, ts2, l_min, l_max, rho):
+def get_lococonsensus_instance(ts1, ts2, l_min, l_max, rho):
     is_diagonal = False
     if np.array_equal(ts1, ts2):
         is_diagonal = True
@@ -11,19 +11,21 @@ def get_loconsensus_instance(ts1, ts2, l_min, l_max, rho):
     ts2 = np.array(ts2, dtype=np.float32)
 
     gamma = 1
-    sm, ut_sm, lt_sm = None, None, None
+    # sm, ut_sm, lt_sm = None, None, None
+    sm, ut_sm = None, None
     if is_diagonal:
         sm = calculate_similarity_matrix(ts1, ts2, gamma, only_triu=is_diagonal)
         tau = estimate_tau_symmetric(sm, rho)
     else:
         ut_sm = calculate_similarity_matrix(ts1, ts2, gamma, only_triu=is_diagonal)
-        lt_sm = calculate_similarity_matrix(ts2, ts1, gamma, only_triu=is_diagonal)
+        # redundant???
+        # lt_sm = calculate_similarity_matrix(ts2, ts1, gamma, only_triu=is_diagonal)
         tau = estimate_tau_assymmetric(ut_sm, rho)
 
     delta_a = 2 * tau
     delta_m = 0.5
     step_sizes = np.array([(1, 1), (2, 1), (1, 2)])
-    lcs = LoConsensus(
+    lcs = LoCoConsensus(
         ts1=ts1,
         ts2=ts2,
         is_diagonal=is_diagonal,
@@ -35,11 +37,11 @@ def get_loconsensus_instance(ts1, ts2, l_min, l_max, rho):
         delta_m=delta_m,
         step_sizes=step_sizes,
     )
-    lcs._sm = (sm, ut_sm, lt_sm)
+    lcs._sm = (sm, ut_sm)
     return lcs
 
 
-class LoConsensus:
+class LoCoConsensus:
     def __init__(
         self,
         ts1,
@@ -67,7 +69,7 @@ class LoConsensus:
         self.delta_a = delta_a
         self.delta_m = delta_m
 
-        self._sm = (None, None, None)
+        self._sm = (None, None)
         self._csm = None
         self._paths = None
         self._mirrored_paths = None
@@ -125,7 +127,7 @@ class LoConsensus:
                 # assert np.array_equal(self._sm[1], self._sm[2].T)
                 path_sims = self._sm[1][i, j]
                 self._paths.append(path_class.Path(path, path_sims))
-                mirrored_path_sims = self._sm[2][j, i]
+                mirrored_path_sims = self._sm[1].T[j, i]
                 self._mirrored_paths.append(
                     path_class.Path(path_mirrored, mirrored_path_sims)
                 )
