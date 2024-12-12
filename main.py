@@ -65,13 +65,9 @@ if __name__ == '__main__':
         # lcs.apply_loco()
     """
 
-    # TODO: overlap???
-    nb = None
-    motif_sets = []
-
     global_consensus_columns = []
-    for _ in range(n):
-        gcc = lcc.ConsensusColumn(global_offsets, L_MIN, L_MAX)
+    for column_index in range(n):
+        gcc = lcc.ConsensusColumn(column_index, global_offsets, L_MIN, L_MAX)
         global_consensus_columns.append(gcc)
 
     # use threading here???
@@ -84,4 +80,32 @@ if __name__ == '__main__':
         if not lcs.is_diagonal:
             global_consensus_columns[gcolumn - 1].append_mpaths(
                 lcs._mirrored_paths, offset_indices[comparison_index]
+            )
+
+    # TODO: overlap???
+    nb = None
+    motif_sets = []
+    smask = np.full(global_offsets[-1], True)
+    emask = np.full(global_offsets[-1], True)
+    while nb is None:
+        if not np.any(smask) or not np.any(emask):
+            break
+
+        for gcc in global_consensus_columns:
+            mask = gcc.mask
+            if np.all(mask):
+                break
+
+            s = gcc.start_offset
+            e = gcc.end_offset
+            m_slice = mask[s:e]
+
+            smask[s:e][m_slice] = False
+            emask[s:e][m_slice] = False
+
+            # csmask = smask[gcc.start_offset : gcc.end_offset]
+            # cemask = emask[gcc.start_offset : gcc.end_offset]
+            # threading???
+            gcc.candidate_finder(
+                smask[s:e], emask[s:e], overlap=np.float64(0.0), keep_fitnesses=False
             )

@@ -12,12 +12,6 @@ spec = [
     ('il', int32),
     ('j1', int32),
     ('jl', int32),
-    ('gindex_i', int32[:]),
-    ('gindex_j', int32[:]),
-    ('gi1', int32),
-    ('gil', int32),
-    ('gj1', int32),
-    ('gjl', int32),
 ]
 
 
@@ -61,34 +55,12 @@ class Path:
         self.index_i = index_i
         self.index_j = index_j
 
+    # returns the index of the first occurrence of the given row
     def find_i(self, i):
         assert i - self.i1 >= 0 and i - self.i1 < len(self.index_i)
         return self.index_i[i - self.i1]
 
+    # returns the index of the first occurrence of the given column
     def find_j(self, j):
         assert j - self.j1 >= 0 and j - self.j1 < len(self.index_j)
         return self.index_j[j - self.j1]
-
-    def _construct_global_index(self, path):
-        self.gi1 = path[0][0]
-        self.gil = path[len(path) - 1][0] + 1
-        self.gj1 = path[0][1]
-        self.gjl = path[len(path) - 1][1] + 1
-
-        i_curr = path[0][0]
-        j_curr = path[0][1]
-
-        gindex_i = np.zeros(self.il - self.i1, dtype=np.int32)
-        gindex_j = np.zeros(self.jl - self.j1, dtype=np.int32)
-
-        for i in range(1, len(path)):
-            if path[i][0] != i_curr:
-                gindex_i[i_curr - self.i1 + 1 : path[i][0] - self.i1 + 1] = i
-                i_curr = path[i][0]
-
-            if path[i][1] != j_curr:
-                gindex_j[j_curr - self.j1 + 1 : path[i][1] - self.j1 + 1] = i
-                j_curr = path[i][1]
-
-        self.gindex_i = gindex_i
-        self.gindex_j = gindex_j

@@ -1,15 +1,36 @@
-import loconsensus.path as path_class
+import loconsensus.global_path as gpath_class
 import numpy as np
 from numba import boolean, float32, float64, int32, njit, typed, types
 
 
 class ConsensusColumn:
-    def __init__(self, global_offsets, l_min, l_max):
+    def __init__(self, cindex, global_offsets, l_min, l_max):
         self.global_offsets = global_offsets
         self.global_n = global_offsets[-1]
         self.l_min = l_min
         self.l_max = l_max
         self._column_paths = None
+
+        self.mask = np.full(self.global_n, False)
+        # TODO: check if these bound the full column?
+        self.start_offset = global_offsets[cindex]
+        self.end_offset = global_offsets[cindex + 1]
+
+    def candidate_finder(self, smask, emask, overlap, keep_fitnesses):
+        (b, e), best_fitness, fitnesses = _find_best_candidate(
+            smask,
+            emask,
+            self.mask,
+            self._column_paths,
+            self.l_min,
+            self.l_max,
+            self.start_offset,
+            overlap,
+            keep_fitnesses,
+        )
+
+        print(f'candidate: ({b},{e}), best fitness: {best_fitness}')
+        print()
 
     def append_paths(self, paths, offset_indices):
         if self._column_paths is None:
@@ -18,8 +39,10 @@ class ConsensusColumn:
         row_start = self.global_offsets[offset_indices[0][0]]
         col_start = self.global_offsets[offset_indices[1][0]]
         for path in paths:
-            path._construct_global_index(path.path + [row_start, col_start])
-            self._column_paths.append(path)
+            gpath = gpath_class.GlobalPath(
+                np.array(path.path + [row_start, col_start], dtype=np.int32), path.sim
+            )
+            self._column_paths.append(gpath)
 
     def append_mpaths(self, mpaths, offset_indices):
         if self._column_paths is None:
@@ -28,8 +51,11 @@ class ConsensusColumn:
         mcol_start = self.global_offsets[offset_indices[0][0]]
         for mpath in mpaths:
             # TODO: Daan???
-            mpath._construct_global_index(mpath.path + [mrow_start, mcol_start])
-            self._column_paths.append(mpath)
+            gpath = gpath_class.GlobalPath(
+                np.array(mpath.path + [mrow_start, mcol_start], dtype=np.int32),
+                mpath.sim,
+            )
+            self._column_paths.append(gpath)
 
     # TODO: local paths?
     def induced_paths(self, b, e, mask=None):
@@ -100,22 +126,32 @@ class ConsensusColumn:
         boolean[:],
         boolean[:],
         boolean[:],
-        types.ListType(path_class.Path.class_type.instance_type),  # type:ignore
+        types.ListType(gpath_class.GlobalPath.class_type.instance_type),  # type:ignore
+        int32,
         int32,
         int32,
         float64,
         boolean,
     )
 )
+# TODO: test out how much faster prange is!!!
 def _find_best_candidate(
-    start_mask, end_mask, mask, paths, l_min, l_max, overlap=0.0, keep_fitnesses=False
+    start_mask,
+    end_mask,
+    mask,
+    paths,
+    l_min,
+    l_max,
+    start_offset,
+    overlap=0.0,
+    keep_fitnesses=False,
 ):
     fitnesses = []
     n = len(start_mask)
 
     # j1s and jls respectively contain the column index of the first and last position of all paths
-    j1s = np.array([path.j1 for path in paths])
-    jls = np.array([path.jl for path in paths])
+    j1s = np.array([path.gj1 for path in paths])  # global???
+    jls = np.array([path.gjl for path in paths])  # global???
 
     nbp = len(paths)
 
@@ -134,26 +170,33 @@ def _find_best_candidate(
         if not start_mask[b]:
             continue
 
-        smask = j1s <= b
+        # global ???
+        gb = b + start_offset
+        smask = j1s <= gb
 
         for e in range(b + l_min, min(n + 1, b + l_max + 1)):
             if not end_mask[e - 1]:
                 continue
 
-            if np.any(mask[b:e]):
+            # global ???
+            ge = e + start_offset
+            if np.any(mask[gb:ge]):
                 break
 
-            emask = jls >= e
+            emask = jls >= ge
             pmask = smask & emask
 
-            # If there are not paths that cross both the vertical line through b and e, skip the candidate.
-            if not np.any(pmask[1:]):
+            # TODO: ???
+            if sum(pmask) < 2:
                 break
+            ## If there are not paths that cross both the vertical line through b and e, skip the candidate.
+            # if not np.any(pmask[1:]):
+            # break
 
             for p in np.flatnonzero(pmask):
                 path = paths[p]
-                kbs[p] = pi = path.find_j(b)
-                kes[p] = pj = path.find_j(e - 1)
+                kbs[p] = pi = path.find_gj(gb)  # global???
+                kes[p] = pj = path.find_gj(ge - 1)  # global???
                 bs[p] = path[pi][0]
                 es[p] = path[pj][0] + 1
                 # Check overlap with previously found motifs.
@@ -162,9 +205,12 @@ def _find_best_candidate(
                 ):  # or es[p] - bs[p] < l_min or es[p] - bs[p] > l_max:
                     pmask[p] = False
 
-            # If the candidate only matches with itself, skip it.
-            if not np.any(pmask[1:]):
+            # TODO: ???
+            if sum(pmask) < 2:
                 break
+            ## If the candidate only matches with itself, skip it.
+            # if not np.any(pmask[1:]):
+            # break
 
             # Sort bs and es on bs such that overlaps can be calculated efficiently
             bs_ = bs[pmask]
