@@ -37,7 +37,6 @@ class GlobalColumn:
     def append_paths(self, paths):
         if self._column_paths is None:
             self._column_paths = typed.List()
-        # local mapping to global mapping
         for path in paths:
             self._column_paths.append(path)
 

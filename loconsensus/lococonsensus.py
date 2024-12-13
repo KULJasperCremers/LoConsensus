@@ -142,8 +142,6 @@ class LoCoConsensus:
                 self._paths.append(gpath_class.GlobalPath(gpath, path_sims))
                 self._paths.append(gpath_class.GlobalPath(gpath_mir, path_sims))
             else:
-                # TODO: Daan???
-                # assert np.array_equal(self._sm[1], self._sm[2].T)
                 path_sims = self._sm[1][i, j]
                 self._paths.append(gpath_class.GlobalPath(gpath, path_sims))
                 mir_path_sims = self._sm[1].T[j, i]
@@ -292,7 +290,6 @@ def estimate_tau_symmetric(sm, rho):
     return tau
 
 
-# TODO: Daan???
 def estimate_tau_assymmetric(sm, rho):
     tau = np.quantile(sm, rho, axis=None)
     return tau
