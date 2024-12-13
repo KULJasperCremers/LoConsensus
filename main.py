@@ -25,17 +25,18 @@ if __name__ == '__main__':
     subject105 = subjects.get('subject105')
     ts2 = np.concatenate([subject105.get('walking'), subject105.get('running')])
 
+    # ts = np.concatenate([ts1, ts2])
     # to run LoCoMotif for comparison
-    loco = True
+    loco = False
     if loco:
         motif_sets1 = locomotif.apply_locomotif(
             ts1, l_min=L_MIN, l_max=L_MAX, rho=RHO, warping=True
         )
         print(f'LoCoMotif: {len(motif_sets1)}')
 
-    ts_list = [ts1]
-    # ts_list = [ts1, ts2]
-    # ts_list = [ts2, ts1]
+    # ts_list = [ts1]
+    ts_list = [ts1, ts2]  # 29 motifs ~111s
+    # ts_list = [ts2, ts1]  # 31 motifs ~115s
     ts_lengths = [len(ts) for ts in ts_list]
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
@@ -50,9 +51,9 @@ if __name__ == '__main__':
     lccs = []
     args_list = []
     # combinations_with_replacements returns self comparisons, e.g. (ts1, ts1)
-    for _, (ts1, ts2) in enumerate(combinations_with_replacement(ts_list, 2)):
+    for cindex, (ts1, ts2) in enumerate(combinations_with_replacement(ts_list, 2)):
         lcc = lococonsensus.get_lococonsensus_instance(
-            ts1, ts2, l_min=L_MIN, l_max=L_MAX, rho=RHO
+            ts1, ts2, global_offsets, offset_indices[cindex], L_MIN, L_MAX, RHO
         )
         lccs.append(lcc)
         args_list.append(lcc)
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     )
 
     mc = motifconsensus.get_motifconsensus_instance(
-        n, global_offsets, L_MIN, L_MAX, lccs, offset_indices
+        n, global_offsets, L_MIN, L_MAX, lccs
     )
 
     import time

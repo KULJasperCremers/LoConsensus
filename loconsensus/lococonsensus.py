@@ -1,9 +1,11 @@
-import loconsensus.path as path_class
+import loconsensus.global_path as gpath_class
 import numpy as np
 from numba import boolean, float32, float64, int32, njit, typed, types
 
 
-def get_lococonsensus_instance(ts1, ts2, l_min, l_max, rho):
+def get_lococonsensus_instance(
+    ts1, ts2, global_offsets, offset_indices, l_min, l_max, rho
+):
     is_diagonal = False
     if np.array_equal(ts1, ts2):
         is_diagonal = True
@@ -35,6 +37,8 @@ def get_lococonsensus_instance(ts1, ts2, l_min, l_max, rho):
         delta_a=delta_a,
         delta_m=delta_m,
         step_sizes=step_sizes,
+        global_offsets=global_offsets,
+        offset_indices=offset_indices,
     )
     lcs._sm = (sm, ut_sm)
     return lcs
@@ -53,6 +57,8 @@ class LoCoConsensus:
         delta_a,
         delta_m,
         step_sizes,
+        global_offsets,
+        offset_indices,
     ):
         self.ts1 = ts1
         self.is_diagonal = is_diagonal
@@ -70,6 +76,10 @@ class LoCoConsensus:
         self._csm = None
         self._paths = None
         self._mirrored_paths = None
+
+        # global path logic
+        self.rstart = self.cstart_mir = global_offsets[offset_indices[0][0]]
+        self.cstart = self.rstart_mir = global_offsets[offset_indices[1][0]]
 
     def apply_loco(self):
         # apply LoCo
@@ -96,7 +106,9 @@ class LoCoConsensus:
         if self.is_diagonal:
             mask = np.full(self._csm.shape, True)
             mask[np.triu_indices(len(mask), k=vwidth)] = False
-            diagonal = np.vstack(np.diag_indices(len(self.ts1))).astype(np.int32).T
+            diagonal = np.vstack(np.diag_indices(len(self.ts1))).T
+            # TODO: check gdiagonal requirement???
+            gdiagonal = diagonal + [self.rstart, self.cstart]
         else:
             mask = np.full(self._csm.shape, False)
             self._mirrored_paths = typed.List()
@@ -105,28 +117,38 @@ class LoCoConsensus:
         )
 
         self._paths = typed.List()
+
         if self.is_diagonal:
+            # TODO: check gdiagonal requirement???
             self._paths.append(
-                path_class.Path(diagonal, np.ones(len(diagonal)).astype(np.float32))
+                gpath_class.GlobalPath(
+                    gdiagonal.astype(np.int32),
+                    np.ones(len(diagonal)).astype(np.float32),
+                )
             )
 
         for path in found_paths:
             i, j = path[:, 0], path[:, 1]
-            path_mirrored = np.zeros(path.shape, np.int32)
-            path_mirrored[:, 0] = np.copy(path[:, 1])
-            path_mirrored[:, 1] = np.copy(path[:, 0])
+            # global path logic
+            gpath = np.zeros(path.shape, dtype=np.int32)
+            gpath[:, 0] = np.copy(path[:, 0]) + self.rstart
+            gpath[:, 1] = np.copy(path[:, 1]) + self.cstart
+            gpath_mir = np.zeros(path.shape, dtype=np.int32)
+            gpath_mir[:, 0] = np.copy(path[:, 1]) + self.rstart_mir
+            gpath_mir[:, 1] = np.copy(path[:, 0]) + self.cstart_mir
+
             if self.is_diagonal:
                 path_sims = self._sm[0][i, j]
-                self._paths.append(path_class.Path(path, path_sims))
-                self._paths.append(path_class.Path(path_mirrored, path_sims))
+                self._paths.append(gpath_class.GlobalPath(gpath, path_sims))
+                self._paths.append(gpath_class.GlobalPath(gpath_mir, path_sims))
             else:
                 # TODO: Daan???
                 # assert np.array_equal(self._sm[1], self._sm[2].T)
                 path_sims = self._sm[1][i, j]
-                self._paths.append(path_class.Path(path, path_sims))
-                mirrored_path_sims = self._sm[1].T[j, i]
+                self._paths.append(gpath_class.GlobalPath(gpath, path_sims))
+                mir_path_sims = self._sm[1].T[j, i]
                 self._mirrored_paths.append(
-                    path_class.Path(path_mirrored, mirrored_path_sims)
+                    gpath_class.GlobalPath(gpath_mir, mir_path_sims)
                 )
 
 

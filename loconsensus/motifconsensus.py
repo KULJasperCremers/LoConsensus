@@ -5,19 +5,17 @@ from joblib import Parallel, delayed
 from loconsensus.global_column import GlobalColumn
 
 
-def get_motifconsensus_instance(n, global_offsets, l_min, l_max, lccs, offset_indices):
+def get_motifconsensus_instance(n, global_offsets, l_min, l_max, lccs):
     gcs = []
     for column_index in range(n):
         gcs.append(GlobalColumn(column_index, global_offsets, l_min, l_max))
 
     gcolumn = 0
-    for comparison_index, lcc in enumerate(lccs):
+    for lcc in lccs:
         gcolumn += 0 if lcc.is_diagonal else 1
-        gcs[gcolumn].append_paths(lcc._paths, offset_indices[comparison_index])
+        gcs[gcolumn].append_paths(lcc._paths)
         if not lcc.is_diagonal:
-            gcs[gcolumn - 1].append_mpaths(
-                lcc._mirrored_paths, offset_indices[comparison_index]
-            )
+            gcs[gcolumn - 1].append_mpaths(lcc._mirrored_paths)
     return MotifConsensus(global_offsets, gcs)
 
 

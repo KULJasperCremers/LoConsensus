@@ -34,31 +34,18 @@ class GlobalColumn:
         )
         return (b, e), best_fitness, fitnesses
 
-    def append_paths(self, paths, offset_indices):
+    def append_paths(self, paths):
         if self._column_paths is None:
             self._column_paths = typed.List()
         # local mapping to global mapping
-        row_start = self.global_offsets[offset_indices[0][0]]
-        col_start = self.global_offsets[offset_indices[1][0]]
         for path in paths:
-            gpath = np.zeros((len(path), len(path)), dtype=np.int32)
-            gpath[:, 0] = np.copy(path.path[:, 0]) + row_start
-            gpath[:, 1] = np.copy(path.path[:, 1]) + col_start
-            gpath = gpath_class.GlobalPath(gpath, path.sim)
-            self._column_paths.append(gpath)
+            self._column_paths.append(path)
 
-    def append_mpaths(self, mpaths, offset_indices):
+    def append_mpaths(self, mpaths):
         if self._column_paths is None:
             self._column_paths = typed.List()
-        mrow_start = self.global_offsets[offset_indices[1][0]]
-        mcol_start = self.global_offsets[offset_indices[0][0]]
         for mpath in mpaths:
-            # TODO: Daan???
-            gpath = np.zeros((len(mpath), len(mpath)), dtype=np.int32)
-            gpath[:, 0] = np.copy(mpath.path[:, 0]) + mrow_start
-            gpath[:, 1] = np.copy(mpath.path[:, 1]) + mcol_start
-            gpath = gpath_class.GlobalPath(gpath, mpath.sim)
-            self._column_paths.append(gpath)
+            self._column_paths.append(mpath)
 
     def induced_paths(self, b, e):
         induced_paths = []
@@ -69,8 +56,6 @@ class GlobalColumn:
                 if not np.any(self.mask[bm:em]):
                     induced_path = np.copy(p.path[kb : ke + 1])
                     induced_paths.append(induced_path)
-
-        print(f'len ip: {len(induced_paths)}')
 
         return induced_paths
 
