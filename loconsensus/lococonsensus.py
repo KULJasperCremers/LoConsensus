@@ -11,14 +11,13 @@ def get_lococonsensus_instance(ts1, ts2, l_min, l_max, rho):
     ts2 = np.array(ts2, dtype=np.float32)
 
     gamma = 1
-    # sm, ut_sm, lt_sm = None, None, None
     sm, ut_sm = None, None
     if is_diagonal:
         sm = calculate_similarity_matrix(ts1, ts2, gamma, only_triu=is_diagonal)
         tau = estimate_tau_symmetric(sm, rho)
     else:
         ut_sm = calculate_similarity_matrix(ts1, ts2, gamma, only_triu=is_diagonal)
-        # redundant???
+        # redundant!
         # lt_sm = calculate_similarity_matrix(ts2, ts1, gamma, only_triu=is_diagonal)
         tau = estimate_tau_assymmetric(ut_sm, rho)
 
@@ -56,8 +55,6 @@ class LoCoConsensus:
         step_sizes,
     ):
         self.ts1 = ts1
-        # TODO: Daan???
-        # probleem met off-diagonal self comparisons...
         self.is_diagonal = is_diagonal
         self.ts2 = ts2
         self.l_min = np.int32(l_min)

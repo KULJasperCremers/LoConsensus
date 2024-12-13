@@ -25,16 +25,17 @@ if __name__ == '__main__':
     subject105 = subjects.get('subject105')
     ts2 = np.concatenate([subject105.get('walking'), subject105.get('running')])
 
-    # motif_sets1 = locomotif.apply_locomotif(
-    # ts1, l_min=L_MIN, l_max=L_MAX, rho=RHO, warping=True
-    # )
-    # print(f'LoCoMotif: {len(motif_sets1)}')
+    # to run LoCoMotif for comparison
+    loco = True
+    if loco:
+        motif_sets1 = locomotif.apply_locomotif(
+            ts1, l_min=L_MIN, l_max=L_MAX, rho=RHO, warping=True
+        )
+        print(f'LoCoMotif: {len(motif_sets1)}')
 
-    # ts_list = [ts1]
-    # TODO: self comparison bug!
-    # ts_list = [ts1, ts1]
+    ts_list = [ts1]
     # ts_list = [ts1, ts2]
-    ts_list = [ts2, ts1]
+    # ts_list = [ts2, ts1]
     ts_lengths = [len(ts) for ts in ts_list]
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
@@ -69,10 +70,20 @@ if __name__ == '__main__':
         n, global_offsets, L_MIN, L_MAX, lccs, offset_indices
     )
 
+    import time
+
+    outer_start_time = time.perf_counter()
     overlap = 0.0
     nb = None
     motif_sets2 = []
-    for motif in mc.apply_motif(nb, overlap):
-        motif_sets2.append(motif)
 
+    inner_start_time = time.perf_counter()
+    for motif in mc.apply_motif(nb, overlap):
+        inner_end_time = time.perf_counter()
+        print(f'Time: {inner_end_time - inner_start_time:.2f} seconds.')
+        motif_sets2.append(motif)
+        inner_start_time = time.perf_counter()
+
+    outer_end_time = time.perf_counter()
     print(f'LoConsensus: {len(motif_sets2)}')
+    print(f'Time: {outer_end_time - outer_start_time:.2f} seconds.')

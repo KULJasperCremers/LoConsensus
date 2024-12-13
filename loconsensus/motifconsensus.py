@@ -18,7 +18,6 @@ def get_motifconsensus_instance(n, global_offsets, l_min, l_max, lccs, offset_in
             gcs[gcolumn - 1].append_mpaths(
                 lcc._mirrored_paths, offset_indices[comparison_index]
             )
-
     return MotifConsensus(global_offsets, gcs)
 
 

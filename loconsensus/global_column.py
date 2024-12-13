@@ -1,6 +1,6 @@
 import loconsensus.global_path as gpath_class
 import numpy as np
-from numba import boolean, float32, float64, int32, njit, typed, types
+from numba import boolean, float32, float64, int32, njit, prange, typed, types
 
 
 class GlobalColumn:
@@ -88,7 +88,6 @@ class GlobalColumn:
         boolean,
     )
 )
-# TODO: test out how much faster prange is!!!
 def _find_best_candidate(
     start_mask,
     end_mask,
@@ -120,11 +119,12 @@ def _find_best_candidate(
     best_fitness = 0.0
     best_candidate = (0, n)
 
-    for b in range(n - l_min + 1):
+    # for b in range(n - l_min + 1): # total time for 27 motifs: ~141s
+    for b in prange(n - l_min + 1):  # total time for 27 motifs: ~121s
         if not start_mask[b]:
             continue
 
-        # global ???
+        # global mapping required!
         gb = b + start_offset
         smask = j1s <= gb
 
@@ -132,7 +132,7 @@ def _find_best_candidate(
             if not end_mask[e - 1]:
                 continue
 
-            # global ???
+            # global mapping required!
             ge = e + start_offset
             if np.any(mask[gb:ge]):
                 break
@@ -140,17 +140,14 @@ def _find_best_candidate(
             emask = jls >= ge
             pmask = smask & emask
 
-            ## TODO: ???
-            # if sum(pmask) < 2:
-            # break
             # If there are not paths that cross both the vertical line through b and e, skip the candidate.
-            if not np.any(pmask[1:]):
+            if not np.sum(pmask) > 1:
                 break
 
             for p in np.flatnonzero(pmask):
                 path = paths[p]
-                kbs[p] = pi = path.find_gj(gb)  # global???
-                kes[p] = pj = path.find_gj(ge - 1)  # global???
+                kbs[p] = pi = path.find_gj(gb)
+                kes[p] = pj = path.find_gj(ge - 1)
                 bs[p] = path[pi][0]
                 es[p] = path[pj][0] + 1
                 # Check overlap with previously found motifs.
@@ -159,11 +156,8 @@ def _find_best_candidate(
                 ):  # or es[p] - bs[p] < l_min or es[p] - bs[p] > l_max:
                     pmask[p] = False
 
-            ## TODO: ???
-            # if sum(pmask) < 2:
-            #    break
             # If the candidate only matches with itself, skip it.
-            if not np.any(pmask[1:]):
+            if not np.sum(pmask) > 1:
                 break
 
             # Sort bs and es on bs such that overlaps can be calculated efficiently
@@ -183,16 +177,15 @@ def _find_best_candidate(
             if np.any(overlaps > overlap * len_[:-1]):
                 continue
 
-            # TODO: diagonaal score hier???
             # Calculate normalized coverage
             coverage = np.sum(es_ - bs_) - np.sum(overlaps)
-            n_coverage = (coverage - (ge - gb)) / float(n)
+            n_coverage = coverage / float(n)
 
             # Calculate normalized score
             score = 0
             for p in np.flatnonzero(pmask):
                 score += paths[p].cumsim[kes[p] + 1] - paths[p].cumsim[kbs[p]]
-            n_score = (score - (ge - gb)) / float(np.sum(kes[pmask] - kbs[pmask] + 1))
+            n_score = score / float(np.sum(kes[pmask] - kbs[pmask] + 1))
 
             # Calculate the fitness value
             fit = 0.0
