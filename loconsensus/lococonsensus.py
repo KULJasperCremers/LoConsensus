@@ -127,6 +127,7 @@ class LoCoConsensus:
                 )
             )
 
+        print(f'fp: {len(found_paths)} for ({self.ts1.shape} | {self.ts2.shape})')
         for path in found_paths:
             i, j = path[:, 0], path[:, 1]
             # global path logic
@@ -189,10 +190,18 @@ def calculate_cumulative_similarity_matrix(
     return csm
 
 
-@njit(int32[:, :](float32[:, :], boolean[:, :], int32, int32, int32[:, :]))
-def max_warping_path(csm, mask, i, j, step_sizes):
+@njit(int32[:, :](float32[:, :], boolean[:, :], int32, int32))
+def max_warping_path(csm, mask, i, j):
+    # tie-breaker
+    r, c = csm.shape
+    if r > c:
+        step_sizes = np.array([[1, 1], [2, 1], [1, 2]], dtype=np.int32)
+    else:
+        step_sizes = np.array([[1, 1], [1, 2], [2, 1]], dtype=np.int32)
+
     max_v = max(step_sizes[:, 0])
     max_h = max(step_sizes[:, 1])
+
     path = []
     while i >= max_v and j >= max_h:
         path.append((i - max_v, j - max_h))
@@ -271,7 +280,7 @@ def _find_best_paths(csm, mask, l_min, vwidth, step_sizes):
             if i_best < max_v or j_best < max_h:
                 return paths
 
-            path = max_warping_path(csm, mask, i_best, j_best, step_sizes)
+            path = max_warping_path(csm, mask, i_best, j_best)
             mask = mask_path(path, mask, max_v, max_h)
 
             if (path[-1][0] - path[0][0] + 1) >= l_min or (

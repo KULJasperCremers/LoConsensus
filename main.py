@@ -4,8 +4,10 @@ from itertools import combinations_with_replacement
 from pathlib import Path
 
 import locomotif.locomotif as locomotif
+import locomotif.visualize as visualize
 import loconsensus.lococonsensus as lococonsensus
 import loconsensus.motifconsensus as motifconsensus
+import matplotlib.pyplot as plt
 import numpy as np
 import utils
 from constants import (
@@ -29,14 +31,34 @@ if __name__ == '__main__':
     # to run LoCoMotif for comparison
     loco = False
     if loco:
-        motif_sets1 = locomotif.apply_locomotif(
-            ts1, l_min=L_MIN, l_max=L_MAX, rho=RHO, warping=True
+        l1 = locomotif.get_locomotif_instance(
+            ts1, l_min=L_MIN, l_max=L_MAX, rho=RHO, warping=True, ts2=ts2
         )
-        print(f'LoCoMotif: {len(motif_sets1)}')
+        l1.align()
+
+        p1 = l1.find_best_paths(vwidth=L_MIN // 2)
+        print(f'LoCoMotif: {len(p1)}')
+
+        fig, ax, _ = visualize.plot_sm(ts1, ts2, l1.get_ssm())
+        visualize.plot_local_warping_paths(ax, l1.get_paths())
+        plt.savefig('./plots/ts1ts2.png')
+        plt.close()
+        l2 = locomotif.get_locomotif_instance(
+            ts2, l_min=L_MIN, l_max=L_MAX, rho=RHO, warping=True, ts2=ts1
+        )
+        l2.align()
+
+        p2 = l2.find_best_paths(vwidth=L_MIN // 2)
+        print(f'LoCoMotif: {len(p2)}')
+
+        fig, ax, _ = visualize.plot_sm(ts1, ts2, l2.get_ssm())
+        visualize.plot_local_warping_paths(ax, l2.get_paths())
+        plt.savefig('./plots/ts2ts1.png')
+        plt.close()
 
     # ts_list = [ts1]
-    ts_list = [ts1, ts2]  # 29 motifs ~111s
-    # ts_list = [ts2, ts1]  # 31 motifs ~115s
+    # ts_list = [ts1, ts2]  # 30 motifs ~107s
+    ts_list = [ts2, ts1]  #
     ts_lengths = [len(ts) for ts in ts_list]
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
