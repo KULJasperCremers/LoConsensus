@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     # ts_list = [ts1]
     # ts_list = [ts1, ts2]  # 30 motifs ~107s
-    ts_list = [ts2, ts1]  #
+    ts_list = [ts2, ts1]  # 30 motifs ~107s
     ts_lengths = [len(ts) for ts in ts_list]
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
