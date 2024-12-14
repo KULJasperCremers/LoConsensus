@@ -150,6 +150,13 @@ class LoCoConsensus:
                     gpath_class.GlobalPath(gpath_mir, mir_path_sims)
                 )
 
+    def get_paths(self):
+        return [path.path - [self.rstart, self.cstart] for path in self._paths]
+
+    def get_sm(self):
+        sm = self._sm[0] if self.is_diagonal else self._sm[1]
+        return sm
+
 
 @njit(float32[:, :](float32[:, :], float32[:, :], int32, boolean))
 def calculate_similarity_matrix(ts1, ts2, gamma, only_triu):

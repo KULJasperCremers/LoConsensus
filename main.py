@@ -25,11 +25,11 @@ if __name__ == '__main__':
     subject101 = subjects.get('subject101')
     ts1 = np.concatenate([subject101.get('walking'), subject101.get('cycling')])
     subject105 = subjects.get('subject105')
-    ts2 = np.concatenate([subject105.get('walking'), subject105.get('running')])
+    ts5 = np.concatenate([subject105.get('walking'), subject105.get('running')])
     subject106 = subjects.get('subject106')
-    ts3 = np.concatenate([subject106.get('walking'), subject106.get('running')])
+    ts6 = np.concatenate([subject106.get('walking'), subject106.get('running')])
     subject102 = subjects.get('subject102')
-    ts4 = np.concatenate([subject102.get('walking'), subject101.get('cycling')])
+    ts2 = np.concatenate([subject102.get('walking'), subject101.get('cycling')])
 
     # ts = np.concatenate([ts1, ts2])
     # to run LoCoMotif for comparison
@@ -60,10 +60,12 @@ if __name__ == '__main__':
         plt.savefig('./plots/ts2ts1.png')
         plt.close()
 
-    # ts_list = [ts1]
     # ts_list = [ts1, ts2]  # 30 motifs ~107s
     # ts_list = [ts2, ts1]  # 30 motifs ~107s
-    ts_list = [ts2, ts1, ts3, ts4]
+    ts_list = [ts5, ts1, ts6, ts2]
+    series_file = Path('./data/series.pkl')
+    with series_file.open('wb') as f:
+        pickle.dump(np.concatenate(ts_list), f)
     ts_lengths = [len(ts) for ts in ts_list]
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
@@ -74,6 +76,8 @@ if __name__ == '__main__':
     print(f'matrix n: {global_offsets[-1]}')
 
     # total_comparisons = n * (n + 1) // 2
+
+    vis = True
 
     lccs = []
     args_list = []
@@ -93,6 +97,13 @@ if __name__ == '__main__':
     Parallel(n_jobs=num_threads, backend='threading')(
         delayed(process_comparison)(args) for args in args_list
     )
+
+    if vis:
+        for comparison, lcc in enumerate(lccs):
+            fig, ax, _ = visualize.plot_sm(lcc.ts1, lcc.ts2, lcc.get_sm())
+            visualize.plot_local_warping_paths(ax, lcc.get_paths())
+            plt.savefig(f'./plots/lwp_{comparison}.png')
+            plt.close()
 
     mc = motifconsensus.get_motifconsensus_instance(
         n, global_offsets, L_MIN, L_MAX, lccs
