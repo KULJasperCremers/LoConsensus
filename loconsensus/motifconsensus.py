@@ -10,12 +10,16 @@ def get_motifconsensus_instance(n, global_offsets, l_min, l_max, lccs):
     for column_index in range(n):
         gcs.append(GlobalColumn(column_index, global_offsets, l_min, l_max))
 
-    gcolumn = 0
+    coffset = -1
     for lcc in lccs:
-        gcolumn += 0 if lcc.is_diagonal else 1
-        gcs[gcolumn].append_paths(lcc._paths)
-        if not lcc.is_diagonal:
-            gcs[gcolumn - 1].append_mpaths(lcc._mirrored_paths)
+        if lcc.is_diagonal:
+            coffset += 1
+            gcs[coffset].append_paths(lcc._paths)
+            gcolumn = coffset
+        else:
+            gcs[gcolumn].append_mpaths(lcc._mirrored_paths)
+            gcolumn += 1
+            gcs[gcolumn].append_paths(lcc._paths)
     return MotifConsensus(global_offsets, gcs)
 
 
@@ -74,11 +78,12 @@ class MotifConsensus:
             b, e = best_candidate
             print(f'({b},{e})')
             gc = self.global_columns[best_cindex]
-            motif_set = vertical_projections(gc.induced_paths(b, e))
+            ips, csims = gc.induced_paths(b, e)
+            motif_set = vertical_projections(ips)
             for bm, em in motif_set:
                 gc.update_mask(bm, em, overlap)
 
-            yield (b, e), motif_set, _
+            yield (b, e), motif_set, csims, _
 
 
 def process_candidate(args):

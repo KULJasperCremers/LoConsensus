@@ -26,6 +26,10 @@ if __name__ == '__main__':
     ts1 = np.concatenate([subject101.get('walking'), subject101.get('cycling')])
     subject105 = subjects.get('subject105')
     ts2 = np.concatenate([subject105.get('walking'), subject105.get('running')])
+    subject106 = subjects.get('subject106')
+    ts3 = np.concatenate([subject106.get('walking'), subject106.get('running')])
+    subject102 = subjects.get('subject102')
+    ts4 = np.concatenate([subject102.get('walking'), subject101.get('cycling')])
 
     # ts = np.concatenate([ts1, ts2])
     # to run LoCoMotif for comparison
@@ -58,7 +62,8 @@ if __name__ == '__main__':
 
     # ts_list = [ts1]
     # ts_list = [ts1, ts2]  # 30 motifs ~107s
-    ts_list = [ts2, ts1]  # 30 motifs ~107s
+    # ts_list = [ts2, ts1]  # 30 motifs ~107s
+    ts_list = [ts2, ts1, ts3, ts4]
     ts_lengths = [len(ts) for ts in ts_list]
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
@@ -110,3 +115,11 @@ if __name__ == '__main__':
     outer_end_time = time.perf_counter()
     print(f'LoConsensus: {len(motif_sets2)}')
     print(f'Time: {outer_end_time - outer_start_time:.2f} seconds.')
+
+    goffsets_file = Path('./data/goffsets.pkl')
+    with goffsets_file.open('wb') as f:
+        pickle.dump(global_offsets, f)
+
+    motifs_file = Path('./data/motifs.pkl')
+    with motifs_file.open('wb') as f:
+        pickle.dump(motif_sets2, f)

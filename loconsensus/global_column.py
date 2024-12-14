@@ -48,6 +48,7 @@ class GlobalColumn:
 
     def induced_paths(self, b, e):
         induced_paths = []
+        csims = []
         for p in self._column_paths:
             if p.gj1 <= b and e <= p.gjl:
                 kb, ke = p.find_gj(b), p.find_gj(e - 1)
@@ -55,8 +56,9 @@ class GlobalColumn:
                 if not np.any(self.mask[bm:em]):
                     induced_path = np.copy(p.path[kb : ke + 1])
                     induced_paths.append(induced_path)
+                    csims.append(p.cumsim[ke + 1] - p.cumsim[kb])
 
-        return induced_paths
+        return induced_paths, csims
 
 
 @njit(
