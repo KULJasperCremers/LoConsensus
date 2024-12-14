@@ -62,11 +62,18 @@ if __name__ == '__main__':
 
     # ts_list = [ts1, ts2]  # 30 motifs ~107s
     # ts_list = [ts2, ts1]  # 30 motifs ~107s
-    ts_list = [ts5, ts1, ts6, ts2]
+    # ts_list = [ts5, ts1, ts6, ts2]  # => dendorgram1.png
+    # ts_list = [ts1, ts5, ts2, ts6]  # => dendorgram2.png
+    # ts_list = [ts6, ts5, ts2, ts1]  # => dendorgram3.png
+    # ts_list = [ts1, ts2, ts5, ts6]  # => dendorgram4.png
+    # ts_list = [ts2, ts1, ts6, ts5]  # => dendorgram5.png
+    ts_list = [ts1, ts2, ts6, ts5]  # => dendorgram6.png
+
     series_file = Path('./data/series.pkl')
     with series_file.open('wb') as f:
         pickle.dump(np.concatenate(ts_list), f)
     ts_lengths = [len(ts) for ts in ts_list]
+    print(ts_lengths)
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
     # creates a np.array /w for each global index the cutoff point
@@ -76,8 +83,6 @@ if __name__ == '__main__':
     print(f'matrix n: {global_offsets[-1]}')
 
     # total_comparisons = n * (n + 1) // 2
-
-    vis = True
 
     lccs = []
     args_list = []
@@ -98,6 +103,7 @@ if __name__ == '__main__':
         delayed(process_comparison)(args) for args in args_list
     )
 
+    vis = False
     if vis:
         for comparison, lcc in enumerate(lccs):
             fig, ax, _ = visualize.plot_sm(lcc.ts1, lcc.ts2, lcc.get_sm())
@@ -115,7 +121,6 @@ if __name__ == '__main__':
     overlap = 0.0
     nb = None
     motif_sets2 = []
-
     inner_start_time = time.perf_counter()
     for motif in mc.apply_motif(nb, overlap):
         inner_end_time = time.perf_counter()

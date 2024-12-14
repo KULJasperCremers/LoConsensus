@@ -52,7 +52,7 @@ nm = (sm - smin) / (smax - smin)
 d = 1 - nm
 Z = linkage(d, method='average')
 
-labels = ['subject105', 'subject101', 'subject106', 'subject102']
+labels = ['subject101', 'subject102', 'subject106', 'subject105']
 plt.figure()
 dendrogram(Z, labels=labels)
 plt.savefig('./plots/dendogram.png')
