@@ -83,10 +83,10 @@ class LoCoConsensus:
 
     def apply_loco(self):
         # apply LoCo
-        self.align()
-        self.find_best_paths(vwidth=self.l_min // 2)
+        self._align()
+        self._find_best_paths(vwidth=self.l_min // 2)
 
-    def align(self):
+    def _align(self):
         if self.is_diagonal:
             # pass sm for diagonal comparisons
             sm = self._sm[0]
@@ -102,12 +102,11 @@ class LoCoConsensus:
             only_triu=self.is_diagonal,
         )
 
-    def find_best_paths(self, vwidth):
+    def _find_best_paths(self, vwidth):
         if self.is_diagonal:
             mask = np.full(self._csm.shape, True)
             mask[np.triu_indices(len(mask), k=vwidth)] = False
             diagonal = np.vstack(np.diag_indices(len(self.ts1))).T
-            # TODO: check gdiagonal requirement???
             gdiagonal = diagonal + [self.rstart, self.cstart]
         else:
             mask = np.full(self._csm.shape, False)
@@ -115,11 +114,11 @@ class LoCoConsensus:
         found_paths = _find_best_paths(
             self._csm, mask, l_min=self.l_min, vwidth=vwidth, step_sizes=self.step_sizes
         )
+        print(f'fp: {len(found_paths)}')
 
         self._paths = typed.List()
 
         if self.is_diagonal:
-            # TODO: check gdiagonal requirement???
             self._paths.append(
                 gpath_class.GlobalPath(
                     gdiagonal.astype(np.int32),
@@ -127,7 +126,6 @@ class LoCoConsensus:
                 )
             )
 
-        print(f'fp: {len(found_paths)} for ({self.ts1.shape} | {self.ts2.shape})')
         for path in found_paths:
             i, j = path[:, 0], path[:, 1]
             # global path logic
@@ -201,7 +199,7 @@ def calculate_cumulative_similarity_matrix(
 def max_warping_path(csm, mask, i, j):
     # tie-breaker
     r, c = csm.shape
-    if r > c:
+    if r >= c:
         step_sizes = np.array([[1, 1], [2, 1], [1, 2]], dtype=np.int32)
     else:
         step_sizes = np.array([[1, 1], [1, 2], [2, 1]], dtype=np.int32)

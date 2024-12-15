@@ -16,9 +16,8 @@ class GlobalColumn:
         self.end_offset = global_offsets[cindex + 1]
 
     def update_mask(self, bm, em, overlap):
-        self.mask[bm + int(overlap * (em - bm)) - 1 : em - int(overlap * (em - bm))] = (
-            True
-        )
+        ml = em - bm
+        self.mask[bm + int(overlap * ml) - 1 : em - int(overlap * ml)] = True
 
     def candidate_finder(self, smask, emask, overlap, keep_fitnesses):
         (b, e), best_fitness, fitnesses = _find_best_candidate(
@@ -157,7 +156,7 @@ def _find_best_candidate(
             # Calculate the overlaps
             len_ = es_ - bs_
             len_[:-1] = np.minimum(len_[:-1], len_[1:])
-            overlaps = np.maximum(es_[:-1] - bs_[1:] - 1, 0)
+            overlaps = np.maximum(es_[:-1] - bs_[1:], 0)
 
             # Overlap check within motif set
             if np.any(overlaps > overlap * len_[:-1]):

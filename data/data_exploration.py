@@ -18,7 +18,7 @@ series_file = Path('./data/series.pkl')
 with series_file.open('rb') as f:
     series = pickle.load(f)
 
-mvis = False
+mvis = True
 if mvis:
     fig, axs = visualize.plot_motif_sets(series, motifs)
     plt.savefig('./plots/motifs.png')
@@ -50,10 +50,17 @@ smax = sm.max()
 nm = (sm - smin) / (smax - smin)
 
 d = 1 - nm
-Z = linkage(d, method='average')
+Z = linkage(d, method='ward')
 
-labels = ['subject101', 'subject102', 'subject106', 'subject105']
-plt.figure()
+labels = [
+    'subject106',
+    'subject104',
+    'subject101',
+    'subject108',
+    'subject102',
+    'subject105',
+]
+plt.figure(figsize=(25, len(labels) * 3))
 dendrogram(Z, labels=labels)
 plt.savefig('./plots/dendogram.png')
 plt.close()

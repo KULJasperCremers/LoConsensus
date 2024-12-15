@@ -57,14 +57,14 @@ class MotifConsensus:
                 break
 
             b, e = best_candidate
-            print(f'({b},{e})')
+            print(f'({b},{e}), bf: {best_fitness}')
             gc = self.global_columns[best_cindex]
             ips, csims = gc.induced_paths(b, e)
             motif_set = vertical_projections(ips)
             for bm, em in motif_set:
                 gc.update_mask(bm, em, overlap)
 
-            yield (b, e), motif_set, csims, _
+            yield (b, e), motif_set, csims, ips, _
 
             self.ccs[best_cindex] = self._calculate_candidate(
                 best_cindex, smask, emask, overlap
