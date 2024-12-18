@@ -34,7 +34,6 @@ class MotifConsensus:
         emask = np.full(self.global_offsets[-1], True)
         mask = np.full(self.global_offsets[-1], False)
 
-        num_threads = multiprocessing.cpu_count()
         while nb is None:
             if np.all(mask) and not np.any(smask) or not np.any(emask):
                 break
@@ -46,27 +45,21 @@ class MotifConsensus:
             best_candidate = None
             best_cindex = None
 
-            args_list = []
+            results = []
             for cindex, gc in enumerate(self.global_columns):
-                if not self.ccs[cindex]:
-                    s, e = gc.start_offset, gc.end_offset
+                s, e = gc.start_offset, gc.end_offset
 
-                    args = (
+                results.append(
+                    (
                         cindex,
-                        gc,
-                        smask[s:e],
-                        emask[s:e],
-                        mask,
-                        overlap,
-                        False,
+                        gc.candidate_finder(
+                            smask[s:e], emask[s:e], mask, overlap, False
+                        ),
                     )
-                    args_list.append(args)
+                )
 
-            results = Parallel(n_jobs=num_threads, backend='threading')(
-                delayed(_process_candidate)(args) for args in args_list
-            )
-
-            for cindex, candidate, fitness, _ in results:
+            for cindex, result in results:
+                candidate, fitness, _ = result
                 if fitness > 0.0:
                     self.ccs[cindex] = (candidate, fitness, _)
                 else:
@@ -92,40 +85,10 @@ class MotifConsensus:
             print(f'ips: {len(ips)}')
             motif_set = vertical_projections(ips)
             for bm, em in motif_set:
-                if len(motif_set) == 1:
-                    print(f'({b},{e}) // ({bm},{em})')
                 ml = em - bm
                 mask[bm + int(overlap * ml) - 1 : em - int(overlap * ml)] = True
 
             yield (b, e), motif_set, csims, ips, _
-
-            for cindex, cc in enumerate(self.ccs):
-                if cindex == best_cindex or not cc:
-                    continue
-                candidate, _, _ = cc
-                b, e = candidate
-                # set candidates with overlapping motifs to None
-                if np.any(mask[b:e]):
-                    self.ccs[cindex] = None
-
-            # set candidate to None
-            self.ccs[best_cindex] = None
-            print(self.global_offsets)
-            for cc in self.ccs:
-                if not cc:
-                    print('None', end=' // ')
-                else:
-                    print(cc[0], end=' // ')
-            print()
-
-
-def _process_candidate(args):
-    (cindex, gc, smask, emask, mask, overlap, keep_fitnesses) = args
-    candidate, best_fitness, _ = gc.candidate_finder(
-        smask, emask, mask, overlap, keep_fitnesses
-    )
-
-    return cindex, candidate, best_fitness, _
 
 
 def vertical_projections(paths):

@@ -54,12 +54,7 @@ Z = linkage(d, method='average')
 
 labels = [
     'walking1',
-    'running1',
-    'cycling1',
     'walking2',
-    'running2',
-    'cycling2',
-    'walking3',
 ]
 plt.figure(figsize=(25, len(labels) * 3))
 dendrogram(Z, labels=labels)

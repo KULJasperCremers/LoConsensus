@@ -26,15 +26,8 @@ if __name__ == '__main__':
 
     subject101 = subjects.get('subject101')
     subject102 = subjects.get('subject102')
-    subject103 = subjects.get('subject103')
-    ts11 = subject101.get('walking')
-    ts12 = subject101.get('running')
-    ts13 = subject101.get('cycling')
-    ts21 = subject102.get('walking')
-    ts22 = subject102.get('running')
-    ts23 = subject102.get('cycling')
-    ts31 = subject103.get('walking')
-
+    ts1 = subject101.get('walking')
+    ts2 = subject102.get('walking')
     vis = True
     # to run LoCoMotif for comparison
     loco = False
@@ -60,7 +53,7 @@ if __name__ == '__main__':
             motif += 1
         print(f'LoCoMotif: {len(motif_sets1)}')
 
-    ts_list = [ts11, ts12, ts13, ts21, ts22, ts23, ts31]
+    ts_list = [ts1, ts2]
     series_file = Path('./data/series.pkl')
     with series_file.open('wb') as f:
         pickle.dump(np.concatenate(ts_list), f)
@@ -95,7 +88,7 @@ if __name__ == '__main__':
     )
     outer_end_time = time.perf_counter()
     print(f'Time LoCo: {outer_end_time - outer_start_time:.2f} seconds.')
-    """
+
     if vis:
         for comparison, lcc in enumerate(lccs):
             fig, ax, _ = visualize.plot_sm(lcc.ts1, lcc.ts2, lcc.get_sm())
@@ -105,7 +98,7 @@ if __name__ == '__main__':
             fig, ax = visualization.plot_global_sm(global_sm, global_offsets, ts_list)
             plt.savefig('./plots/gsm.png')
             plt.close()
-    """
+
     mc = motifconsensus.get_motifconsensus_instance(
         n, global_offsets, L_MIN, L_MAX, lccs
     )

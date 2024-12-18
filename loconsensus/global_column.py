@@ -22,7 +22,6 @@ class GlobalColumn:
             self._column_paths,
             self.l_min,
             self.l_max,
-            self.start_offset,
             overlap,
             keep_fitnesses,
         )
@@ -63,7 +62,6 @@ class GlobalColumn:
         types.ListType(gpath_class.GlobalPath.class_type.instance_type),  # type:ignore
         int32,
         int32,
-        int32,
         float64,
         boolean,
     )
@@ -75,7 +73,6 @@ def _find_best_candidate(
     paths,
     l_min,
     l_max,
-    start_offset,
     overlap=0.0,
     keep_fitnesses=False,
 ):
@@ -104,20 +101,17 @@ def _find_best_candidate(
         if not start_mask[b]:
             continue
 
-        # global mapping required!
-        gb = b + start_offset
-        smask = j1s <= gb
+        smask = j1s <= b
 
         for e in range(b + l_min, min(n + 1, b + l_max + 1)):
             if not end_mask[e - 1]:
                 continue
 
-            # global mapping required!
-            ge = e + start_offset
-            if np.any(mask[gb:ge]):
+            if np.any(mask[b:e]):
                 break
 
-            emask = jls >= ge
+            # emask = jls >= ge
+            emask = jls >= e
             pmask = smask & emask
 
             # If there are not paths that cross both the vertical line through b and e, skip the candidate.
@@ -126,8 +120,8 @@ def _find_best_candidate(
 
             for p in np.flatnonzero(pmask):
                 path = paths[p]
-                kbs[p] = pi = path.find_gj(gb)
-                kes[p] = pj = path.find_gj(ge - 1)
+                kbs[p] = pi = path.find_gj(b)
+                kes[p] = pj = path.find_gj(e - 1)
                 bs[p] = path[pi][0]
                 es[p] = path[pj][0] + 1
                 # Check overlap with previously found motifs.
@@ -157,9 +151,9 @@ def _find_best_candidate(
             if np.any(overlaps > overlap * len_[:-1]):
                 continue
 
-            ## Calculate normalized coverage
-            # coverage = np.sum(es_ - bs_) - np.sum(overlaps)
-            # n_coverage = coverage / float(n)
+            # Calculate normalized coverage
+            coverage = np.sum(es_ - bs_) - np.sum(overlaps)
+            n_coverage = coverage / float(n)
 
             # Calculate normalized score
             score = 0
@@ -170,21 +164,21 @@ def _find_best_candidate(
             # Calculate the fitness value
             fit = 0.0
             # if n_coverage != 0 or n_score != 0:
-            # fit = 2 * (n_coverage * n_score) / (n_coverage + n_score)
-            fit = n_score
+            fit = 2 * (n_coverage * n_score) / (n_coverage + n_score)
+            # fit = n_score
 
             if fit == 0.0:
                 continue
 
             # Update best fitness
             if fit > best_fitness:
-                best_candidate = (gb, ge)
+                best_candidate = (b, e)
                 best_fitness = fit
 
             # Store fitness if necessary
             if keep_fitnesses:
-                # fitnesses.append((gb, ge, fit, n_coverage, n_score))
-                fitnesses.append((gb, ge, fit, n_score))
+                fitnesses.append((b, e, fit, n_coverage, n_score))
+                # fitnesses.append((b, e, fit, n_score))
 
     fitnesses = (
         np.array(fitnesses, dtype=np.float32)
