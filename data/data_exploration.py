@@ -53,12 +53,10 @@ d = 1 - nm
 Z = linkage(d, method='ward')
 
 labels = [
+    'subject102',
     'subject106',
     'subject104',
-    'subject101',
     'subject108',
-    'subject102',
-    'subject105',
 ]
 plt.figure(figsize=(25, len(labels) * 3))
 dendrogram(Z, labels=labels)

@@ -8,6 +8,7 @@ import locomotif.locomotif as locomotif
 import locomotif.visualize as visualize
 import loconsensus.lococonsensus as lococonsensus
 import loconsensus.motifconsensus as motifconsensus
+import loconsensus.visualization as visualization
 import matplotlib.pyplot as plt
 import numpy as np
 import utils
@@ -23,36 +24,16 @@ if __name__ == '__main__':
     with data_file.open('rb') as f:
         subjects = pickle.load(f)  # downsampled by factor 10 to 10 hz
 
-    # walking and cycling and running
     subject101 = subjects.get('subject101')
-    ts1 = np.concatenate(
-        [
-            subject101.get('walking'),
-            subject101.get('running'),
-            subject101.get('cycling'),
-        ]
-    )
-    subject105 = subjects.get('subject105')
-    ts5 = np.concatenate(
-        [
-            subject105.get('walking'),
-            subject105.get('running'),
-            subject105.get('cycling'),
-        ]
-    )
-
-    # walking and cycling
     subject102 = subjects.get('subject102')
-    ts2 = np.concatenate([subject102.get('walking'), subject102.get('cycling')])
-    subject104 = subjects.get('subject104')
-    ts4 = np.concatenate([subject104.get('walking'), subject104.get('cycling')])
-
-    # wakling and running
-    subject106 = subjects.get('subject106')
-    ts6 = np.concatenate([subject106.get('walking'), subject106.get('running')])
-    subject108 = subjects.get('subject108')
-    ts8 = np.concatenate([subject108.get('walking'), subject108.get('running')])
-
+    subject103 = subjects.get('subject103')
+    ts11 = subject101.get('walking')
+    ts12 = subject101.get('running')
+    ts13 = subject101.get('cycling')
+    ts21 = subject102.get('walking')
+    ts22 = subject102.get('running')
+    ts23 = subject102.get('cycling')
+    ts31 = subject103.get('walking')
     vis = False
 
     # to run LoCoMotif for comparison
@@ -79,8 +60,7 @@ if __name__ == '__main__':
             motif += 1
         print(f'LoCoMotif: {len(motif_sets1)}')
 
-    # ts_list = [ts1, ts2, ts6, ts5, ts4, ts8] # => ~2456s, 109 motifs => dendo/motifs1
-    ts_list = [ts6, ts4, ts1, ts8, ts2, ts5]  # => ~2995s, 83 motifs => dendo/motifs2
+    ts_list = [ts11, ts12, ts13, ts21, ts22, ts23, ts31]
     series_file = Path('./data/series.pkl')
     with series_file.open('wb') as f:
         pickle.dump(np.concatenate(ts_list), f)
@@ -119,8 +99,11 @@ if __name__ == '__main__':
     if vis:
         for comparison, lcc in enumerate(lccs):
             fig, ax, _ = visualize.plot_sm(lcc.ts1, lcc.ts2, lcc.get_sm())
-            visualize.plot_local_warping_paths(ax, lcc.get_paths())
-            plt.savefig(f'./plots/lwp_{comparison}.png')
+            plt.savefig(f'./plots/sm{comparison}.png')
+            plt.close()
+            global_sm = visualization.assemble_global_sm(ts_list, lccs, global_offsets)
+            fig, ax = visualization.plot_global_sm(global_sm, global_offsets, ts_list)
+            plt.savefig('./plots/gsm.png')
             plt.close()
 
     mc = motifconsensus.get_motifconsensus_instance(

@@ -11,19 +11,14 @@ class GlobalColumn:
         self.l_max = l_max
         self._column_paths = None
 
-        self.mask = np.full(self.global_n, False)
         self.start_offset = global_offsets[cindex]
         self.end_offset = global_offsets[cindex + 1]
 
-    def update_mask(self, bm, em, overlap):
-        ml = em - bm
-        self.mask[bm + int(overlap * ml) - 1 : em - int(overlap * ml)] = True
-
-    def candidate_finder(self, smask, emask, overlap, keep_fitnesses):
+    def candidate_finder(self, smask, emask, mask, overlap, keep_fitnesses):
         (b, e), best_fitness, fitnesses = _find_best_candidate(
             smask,
             emask,
-            self.mask,
+            mask,
             self._column_paths,
             self.l_min,
             self.l_max,
@@ -45,14 +40,14 @@ class GlobalColumn:
         for mpath in mpaths:
             self._column_paths.append(mpath)
 
-    def induced_paths(self, b, e):
+    def induced_paths(self, b, e, mask):
         induced_paths = []
         csims = []
         for p in self._column_paths:
             if p.gj1 <= b and e <= p.gjl:
                 kb, ke = p.find_gj(b), p.find_gj(e - 1)
                 bm, em = p[kb][0], p[ke][0] + 1
-                if not np.any(self.mask[bm:em]):
+                if not np.any(mask[bm:em]):
                     induced_path = np.copy(p.path[kb : ke + 1])
                     induced_paths.append(induced_path)
                     csims.append(p.cumsim[ke + 1] - p.cumsim[kb])
@@ -85,7 +80,7 @@ def _find_best_candidate(
     keep_fitnesses=False,
 ):
     fitnesses = []
-    n = len(start_mask)
+    n = len(mask)
 
     # j1s and jls respectively contain the column index of the first and last position of all paths
     j1s = np.array([path.gj1 for path in paths])  # global???
@@ -162,6 +157,7 @@ def _find_best_candidate(
             if np.any(overlaps > overlap * len_[:-1]):
                 continue
 
+            # TODO: coverage nodig of niet???
             # Calculate normalized coverage
             coverage = np.sum(es_ - bs_) - np.sum(overlaps)
             n_coverage = coverage / float(n)

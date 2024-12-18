@@ -75,17 +75,15 @@ for subject_file in subject_files:
     subject_id = subject_file.stem
     df = pd.read_csv(subject_file, sep=' ', header=None)
     labels = df.values[:, 1]
-    # TODO: double check the colum indices here!
     hand_x = df.values[:, 4]
     hand_y = df.values[:, 5]
     hand_z = df.values[:, 6]
-    chest_x = df.values[:, 21]
-    chest_y = df.values[:, 22]
-    chest_z = df.values[:, 23]
-    # TODO: double check the column indices here!
-    ankle_x = df.values[:, 38]
-    ankle_y = df.values[:, 39]
-    ankle_z = df.values[:, 40]
+    # chest_x = df.values[:, 21]
+    # chest_y = df.values[:, 22]
+    # chest_z = df.values[:, 23]
+    # ankle_x = df.values[:, 38]
+    # ankle_y = df.values[:, 39]
+    # ankle_z = df.values[:, 40]
 
     transitions = np.where(np.diff(labels))[0] + 1
 
@@ -110,6 +108,7 @@ for subject_file in subject_files:
                 hand_z_proc = z_normalize(
                     downsample_decimate(interpolate(hand_z[start:end]))
                 )
+                """
                 chest_x_proc = z_normalize(
                     downsample_decimate(interpolate(chest_x[start:end]))
                 )
@@ -128,17 +127,18 @@ for subject_file in subject_files:
                 ankle_z_proc = z_normalize(
                     downsample_decimate(interpolate(chest_z[start:end]))
                 )
+                """
                 segment_data = np.column_stack(
                     (
                         hand_x_proc,
                         hand_y_proc,
                         hand_z_proc,
-                        chest_x_proc,
-                        chest_y_proc,
-                        chest_z_proc,
-                        ankle_x_proc,
-                        ankle_y_proc,
-                        ankle_z_proc,
+                        # chest_x_proc,
+                        # chest_y_proc,
+                        # chest_z_proc,
+                        # ankle_x_proc,
+                        # ankle_y_proc,
+                        # ankle_z_proc,
                     )
                 )
                 subject_segments[activity] = segment_data

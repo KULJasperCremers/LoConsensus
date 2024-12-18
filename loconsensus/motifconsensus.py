@@ -32,16 +32,45 @@ class MotifConsensus:
     def apply_motif(self, nb, overlap):
         smask = np.full(self.global_offsets[-1], True)
         emask = np.full(self.global_offsets[-1], True)
+        mask = np.full(self.global_offsets[-1], False)
 
-        self._calculate_candidates(smask, emask, overlap)
-
+        num_threads = multiprocessing.cpu_count()
         while nb is None:
-            if not np.any(smask) or not np.any(emask):
+            if np.all(mask) and not np.any(smask) or not np.any(emask):
                 break
+
+            smask[mask] = False
+            emask[mask] = False
 
             best_fitness = 0.0
             best_candidate = None
             best_cindex = None
+
+            args_list = []
+            for cindex, gc in enumerate(self.global_columns):
+                if not self.ccs[cindex]:
+                    s, e = gc.start_offset, gc.end_offset
+
+                    args = (
+                        cindex,
+                        gc,
+                        smask[s:e],
+                        emask[s:e],
+                        mask,
+                        overlap,
+                        False,
+                    )
+                    args_list.append(args)
+
+            results = Parallel(n_jobs=num_threads, backend='threading')(
+                delayed(_process_candidate)(args) for args in args_list
+            )
+
+            for cindex, candidate, fitness, _ in results:
+                if fitness > 0.0:
+                    self.ccs[cindex] = (candidate, fitness, _)
+                else:
+                    self.ccs[cindex] = None
 
             for cindex, cc in enumerate(self.ccs):
                 if not cc:
@@ -59,68 +88,62 @@ class MotifConsensus:
             b, e = best_candidate
             print(f'({b},{e}), bf: {best_fitness}')
             gc = self.global_columns[best_cindex]
-            ips, csims = gc.induced_paths(b, e)
+            ips, csims = gc.induced_paths(b, e, mask)
             motif_set = vertical_projections(ips)
             for bm, em in motif_set:
-                gc.update_mask(bm, em, overlap)
+                ml = em - bm
+                mask[bm + int(overlap * ml) - 1 : em - int(overlap * ml)] = True
 
+            args_list = []
+            for cindex, cc in enumerate(self.ccs):
+                if cindex == best_cindex or not cc:
+                    continue
+                candidate, _, _ = cc
+                args = (cindex, candidate, mask)
+                args_list.append(args)
+
+            results = Parallel(n_jobs=num_threads, backend='threading')(
+                delayed(_process_motifs)(args) for args in args_list
+            )
+
+            # set candidates with overlapping motifs to None
+            for cindex, masked in results:
+                if masked:
+                    self.ccs[cindex] = None
+
+            # set candidate to None
+            self.ccs[best_cindex] = None
+
+            """
+
+            for cindex, cc in enumerate(self.ccs):
+                if not cc:
+                    continue
+                if cindex == best_cindex:
+                    self.ccs[best_cindex] = None
+                candidate, _, _ = cc
+                b, e = candidate
+                if mask[b] or mask[e]:
+                    self.ccs[cindex] = None
+
+            """
             yield (b, e), motif_set, csims, ips, _
 
-            self.ccs[best_cindex] = self._calculate_candidate(
-                best_cindex, smask, emask, overlap
-            )
 
-    def _calculate_candidate(self, cindex, smask, emask, overlap):
-        gc = self.global_columns[cindex]
-        ssmask, semask = self._masking(gc, smask, emask)
-
-        candidate, fitness, _ = gc.candidate_finder(ssmask, semask, overlap, False)
-        if fitness > 0.0:
-            return candidate, fitness, _
-        return None
-
-    def _calculate_candidates(self, smask, emask, overlap):
-        args_list = []
-        for cindex, gc in enumerate(self.global_columns):
-            ssmask, semask = self._masking(gc, smask, emask)
-
-            args = (
-                cindex,
-                gc,
-                ssmask,
-                semask,
-                overlap,
-                False,
-            )
-            args_list.append(args)
-
-        num_threads = multiprocessing.cpu_count()
-        results = Parallel(n_jobs=num_threads, backend='threading')(
-            delayed(process_candidate)(args) for args in args_list
-        )
-        for cindex, candidate, fitness, _ in results:
-            if fitness > 0.0:
-                self.ccs[cindex] = (candidate, fitness, _)
-            else:
-                self.ccs[cindex] = None
-
-    def _masking(self, c, smask, emask):
-        mask = c.mask
-        s, e = c.start_offset, c.end_offset
-        m = mask[s:e]
-        smask[s:e][m] = False
-        emask[s:e][m] = False
-
-        return smask[s:e], emask[s:e]
-
-
-def process_candidate(args):
-    (cindex, gc, smask, emask, overlap, keep_fitnesses) = args
+def _process_candidate(args):
+    (cindex, gc, smask, emask, mask, overlap, keep_fitnesses) = args
     candidate, best_fitness, _ = gc.candidate_finder(
-        smask, emask, overlap, keep_fitnesses
+        smask, emask, mask, overlap, keep_fitnesses
     )
 
     return cindex, candidate, best_fitness, _
+
+
+def _process_motifs(args):
+    (cindex, candidate, mask) = args
+    b, e = candidate
+    masked = mask[b] or mask[e]
+    return cindex, masked
 
 
 def vertical_projections(paths):
