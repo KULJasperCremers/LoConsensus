@@ -89,45 +89,34 @@ class MotifConsensus:
             print(f'({b},{e}), bf: {best_fitness}')
             gc = self.global_columns[best_cindex]
             ips, csims = gc.induced_paths(b, e, mask)
+            print(f'ips: {len(ips)}')
             motif_set = vertical_projections(ips)
             for bm, em in motif_set:
+                if len(motif_set) == 1:
+                    print(f'({b},{e}) // ({bm},{em})')
                 ml = em - bm
                 mask[bm + int(overlap * ml) - 1 : em - int(overlap * ml)] = True
 
-            args_list = []
+            yield (b, e), motif_set, csims, ips, _
+
             for cindex, cc in enumerate(self.ccs):
                 if cindex == best_cindex or not cc:
                     continue
                 candidate, _, _ = cc
-                args = (cindex, candidate, mask)
-                args_list.append(args)
-
-            results = Parallel(n_jobs=num_threads, backend='threading')(
-                delayed(_process_motifs)(args) for args in args_list
-            )
-
-            # set candidates with overlapping motifs to None
-            for cindex, masked in results:
-                if masked:
+                b, e = candidate
+                # set candidates with overlapping motifs to None
+                if np.any(mask[b:e]):
                     self.ccs[cindex] = None
 
             # set candidate to None
             self.ccs[best_cindex] = None
-
-            """
-
-            for cindex, cc in enumerate(self.ccs):
+            print(self.global_offsets)
+            for cc in self.ccs:
                 if not cc:
-                    continue
-                if cindex == best_cindex:
-                    self.ccs[best_cindex] = None
-                candidate, _, _ = cc
-                b, e = candidate
-                if mask[b] or mask[e]:
-                    self.ccs[cindex] = None
-
-            """
-            yield (b, e), motif_set, csims, ips, _
+                    print('None', end=' // ')
+                else:
+                    print(cc[0], end=' // ')
+            print()
 
 
 def _process_candidate(args):
@@ -137,13 +126,6 @@ def _process_candidate(args):
     )
 
     return cindex, candidate, best_fitness, _
-
-
-def _process_motifs(args):
-    (cindex, candidate, mask) = args
-    b, e = candidate
-    masked = mask[b] or mask[e]
-    return cindex, masked
 
 
 def vertical_projections(paths):

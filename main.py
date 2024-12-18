@@ -34,8 +34,8 @@ if __name__ == '__main__':
     ts22 = subject102.get('running')
     ts23 = subject102.get('cycling')
     ts31 = subject103.get('walking')
-    vis = False
 
+    vis = True
     # to run LoCoMotif for comparison
     loco = False
     if loco:
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     )
     outer_end_time = time.perf_counter()
     print(f'Time LoCo: {outer_end_time - outer_start_time:.2f} seconds.')
-
+    """
     if vis:
         for comparison, lcc in enumerate(lccs):
             fig, ax, _ = visualize.plot_sm(lcc.ts1, lcc.ts2, lcc.get_sm())
@@ -105,7 +105,7 @@ if __name__ == '__main__':
             fig, ax = visualization.plot_global_sm(global_sm, global_offsets, ts_list)
             plt.savefig('./plots/gsm.png')
             plt.close()
-
+    """
     mc = motifconsensus.get_motifconsensus_instance(
         n, global_offsets, L_MIN, L_MAX, lccs
     )

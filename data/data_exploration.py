@@ -50,13 +50,16 @@ smax = sm.max()
 nm = (sm - smin) / (smax - smin)
 
 d = 1 - nm
-Z = linkage(d, method='ward')
+Z = linkage(d, method='average')
 
 labels = [
-    'subject102',
-    'subject106',
-    'subject104',
-    'subject108',
+    'walking1',
+    'running1',
+    'cycling1',
+    'walking2',
+    'running2',
+    'cycling2',
+    'walking3',
 ]
 plt.figure(figsize=(25, len(labels) * 3))
 dendrogram(Z, labels=labels)

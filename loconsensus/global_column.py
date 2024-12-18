@@ -157,10 +157,9 @@ def _find_best_candidate(
             if np.any(overlaps > overlap * len_[:-1]):
                 continue
 
-            # TODO: coverage nodig of niet???
-            # Calculate normalized coverage
-            coverage = np.sum(es_ - bs_) - np.sum(overlaps)
-            n_coverage = coverage / float(n)
+            ## Calculate normalized coverage
+            # coverage = np.sum(es_ - bs_) - np.sum(overlaps)
+            # n_coverage = coverage / float(n)
 
             # Calculate normalized score
             score = 0
@@ -170,8 +169,9 @@ def _find_best_candidate(
 
             # Calculate the fitness value
             fit = 0.0
-            if n_coverage != 0 or n_score != 0:
-                fit = 2 * (n_coverage * n_score) / (n_coverage + n_score)
+            # if n_coverage != 0 or n_score != 0:
+            # fit = 2 * (n_coverage * n_score) / (n_coverage + n_score)
+            fit = n_score
 
             if fit == 0.0:
                 continue
@@ -183,7 +183,8 @@ def _find_best_candidate(
 
             # Store fitness if necessary
             if keep_fitnesses:
-                fitnesses.append((gb, ge, fit, n_coverage, n_score))
+                # fitnesses.append((gb, ge, fit, n_coverage, n_score))
+                fitnesses.append((gb, ge, fit, n_score))
 
     fitnesses = (
         np.array(fitnesses, dtype=np.float32)
