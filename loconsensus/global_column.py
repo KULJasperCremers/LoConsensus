@@ -12,7 +12,7 @@ class GlobalColumn:
         self._column_paths = None
 
         self.start_offset = global_offsets[cindex]
-        self.end_offset = global_offsets[cindex + 1]
+        self.end_offset = global_offsets[cindex + 1] - 1
 
     def candidate_finder(self, smask, emask, mask, overlap, keep_fitnesses):
         (b, e), best_fitness, fitnesses = _find_best_candidate(
@@ -78,6 +78,7 @@ def _find_best_candidate(
 ):
     fitnesses = []
     n = len(mask)
+    mn = len(start_mask)
 
     # j1s and jls respectively contain the column index of the first and last position of all paths
     j1s = np.array([path.gj1 for path in paths])  # global???
@@ -96,14 +97,13 @@ def _find_best_candidate(
     best_fitness = 0.0
     best_candidate = (0, n)
 
-    # for b in range(n - l_min + 1): # total time for 27 motifs: ~141s
-    for b in prange(n - l_min + 1):  # total time for 27 motifs: ~121s
+    for b in prange(mn - l_min + 1):  # total time for 27 motifs: ~121s
         if not start_mask[b]:
             continue
 
         smask = j1s <= b
 
-        for e in range(b + l_min, min(n + 1, b + l_max + 1)):
+        for e in range(b + l_min, min(mn + 1, b + l_max + 1)):
             if not end_mask[e - 1]:
                 continue
 
@@ -163,9 +163,11 @@ def _find_best_candidate(
 
             # Calculate the fitness value
             fit = 0.0
-            # if n_coverage != 0 or n_score != 0:
-            fit = 2 * (n_coverage * n_score) / (n_coverage + n_score)
-            # fit = n_score
+            """
+            if n_coverage != 0 or n_score != 0:
+                fit = 2 * (n_coverage * n_score) / (n_coverage + n_score)
+            """
+            fit = n_score
 
             if fit == 0.0:
                 continue

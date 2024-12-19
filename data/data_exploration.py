@@ -53,8 +53,27 @@ d = 1 - nm
 Z = linkage(d, method='average')
 
 labels = [
-    'walking1',
-    'walking2',
+    'w1',
+    'r1',
+    'c1',
+    'w2',
+    'r2',
+    'c2',
+    'w3',
+    'w4',
+    'c4',
+    'w5',
+    'r5',
+    'c5',
+    'w6',
+    'r6',
+    'c6',
+    'w7',
+    'r7',
+    'c7',
+    'w8',
+    'r8',
+    'c8',
 ]
 plt.figure(figsize=(25, len(labels) * 3))
 dendrogram(Z, labels=labels)

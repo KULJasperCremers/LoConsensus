@@ -26,9 +26,30 @@ if __name__ == '__main__':
 
     subject101 = subjects.get('subject101')
     subject102 = subjects.get('subject102')
-    ts1 = subject101.get('walking')
-    ts2 = subject102.get('walking')
-    vis = True
+    subject103 = subjects.get('subject103')
+    subject104 = subjects.get('subject104')
+    subject105 = subjects.get('subject105')
+    subject106 = subjects.get('subject106')
+    subject107 = subjects.get('subject107')
+    subject108 = subjects.get('subject108')
+
+    ts_list = []
+    for i in range(1, 9):
+        s = subjects.get(f'subject10{i}')
+        w = s.get('walking', None)
+        if w.shape[1] == 3:
+            ts_list.append(w)
+        r = s.get('running', None)
+        if r.shape[1] == 3:
+            ts_list.append(r)
+        c = s.get('cycling', None)
+        if c.shape[1] == 3:
+            ts_list.append(c)
+
+    [print(ts.shape) for ts in ts_list]
+    print(f'length ts_list: {len(ts_list)}')
+
+    vis = False
     # to run LoCoMotif for comparison
     loco = False
     if loco:
@@ -53,7 +74,6 @@ if __name__ == '__main__':
             motif += 1
         print(f'LoCoMotif: {len(motif_sets1)}')
 
-    ts_list = [ts1, ts2]
     series_file = Path('./data/series.pkl')
     with series_file.open('wb') as f:
         pickle.dump(np.concatenate(ts_list), f)
