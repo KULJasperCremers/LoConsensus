@@ -20,36 +20,20 @@ from constants import (
 from joblib import Parallel, delayed
 
 if __name__ == '__main__':
-    data_file = Path('./data/subjects.pkl')
-    with data_file.open('rb') as f:
-        subjects = pickle.load(f)  # downsampled by factor 10 to 10 hz
-
-    subject101 = subjects.get('subject101')
-    subject102 = subjects.get('subject102')
-    subject103 = subjects.get('subject103')
-    subject104 = subjects.get('subject104')
-    subject105 = subjects.get('subject105')
-    subject106 = subjects.get('subject106')
-    subject107 = subjects.get('subject107')
-    subject108 = subjects.get('subject108')
-
-    ts_list = []
-    for i in range(1, 9):
-        s = subjects.get(f'subject10{i}')
-        w = s.get('walking', None)
-        if w.shape[1] == 3:
-            ts_list.append(w)
-        r = s.get('running', None)
-        if r.shape[1] == 3:
-            ts_list.append(r)
-        c = s.get('cycling', None)
-        if c.shape[1] == 3:
-            ts_list.append(c)
-
-    [print(ts.shape) for ts in ts_list]
+    f = open('./data/mitdb_patient214.csv')
+    s = np.array([l.split(',') for l in f.readlines()], dtype=np.float32)
+    s = (s - np.mean(s, axis=0)) / np.std(s, axis=0)
+    print(len(s))
+    ts1 = s[:1800]
+    ts2 = s
+    fs = 360
+    L_MIN = int(0.6 * fs)
+    L_MAX = int(1 * fs)
+    ts_list = [ts1, ts2]
     print(f'length ts_list: {len(ts_list)}')
 
-    vis = False
+    vis = True
+
     # to run LoCoMotif for comparison
     loco = False
     if loco:
@@ -92,7 +76,7 @@ if __name__ == '__main__':
     # combinations_with_replacements returns self comparisons, e.g. (ts1, ts1)
     for cindex, (ts1, ts2) in enumerate(combinations_with_replacement(ts_list, 2)):
         lcc = lococonsensus.get_lococonsensus_instance(
-            ts1, ts2, global_offsets, offset_indices[cindex], L_MIN, L_MAX, RHO
+            ts1, ts2, global_offsets, offset_indices[cindex], L_MIN, RHO
         )
         lccs.append(lcc)
         args_list.append(lcc)
@@ -110,14 +94,38 @@ if __name__ == '__main__':
     print(f'Time LoCo: {outer_end_time - outer_start_time:.2f} seconds.')
 
     if vis:
+        label_fontsize = 50
+        label_fontweight = 'bold'
+        labels = ['(0,0)', '(0,1)', '(1,1)']
         for comparison, lcc in enumerate(lccs):
             fig, ax, _ = visualize.plot_sm(lcc.ts1, lcc.ts2, lcc.get_sm())
+            ax[3].text(
+                0.5,
+                0.5,
+                labels[comparison],
+                color='magenta',
+                fontsize=label_fontsize,
+                fontweight=label_fontweight,
+                ha='center',
+                va='center',
+                transform=ax[3].transAxes,
+            )
+            visualization.plot_local_warping_paths(
+                ax, lcc.get_paths(), comparison, global_offsets
+            )
             plt.savefig(f'./plots/sm{comparison}.png')
             plt.close()
-            global_sm = visualization.assemble_global_sm(ts_list, lccs, global_offsets)
-            fig, ax = visualization.plot_global_sm(global_sm, global_offsets, ts_list)
-            plt.savefig('./plots/gsm.png')
-            plt.close()
+            # global_sm, ps = visualization.assemble_global_sm(
+            # ts_list, lccs, global_offsets
+            # )
+            # fig, ax = visualization.plot_global_sm(global_sm, global_offsets, ts_list)
+            # plt.savefig('./plots/gsm.png')
+            # plt.close()
+            # fig, ax = visualization.plot_ut_with_lwp(
+            # global_sm, global_offsets, ts_list, ps
+            # )
+            # plt.savefig('./plots/gsmlwp.png')
+            # plt.close()
 
     mc = motifconsensus.get_motifconsensus_instance(
         n, global_offsets, L_MIN, L_MAX, lccs

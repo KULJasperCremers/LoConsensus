@@ -3,9 +3,7 @@ import numpy as np
 from numba import boolean, float32, float64, int32, njit, typed, types
 
 
-def get_lococonsensus_instance(
-    ts1, ts2, global_offsets, offset_indices, l_min, l_max, rho
-):
+def get_lococonsensus_instance(ts1, ts2, global_offsets, offset_indices, l_min, rho):
     is_diagonal = False
     if np.array_equal(ts1, ts2):
         is_diagonal = True
@@ -31,7 +29,6 @@ def get_lococonsensus_instance(
         ts2=ts2,
         is_diagonal=is_diagonal,
         l_min=l_min,
-        l_max=l_max,
         gamma=gamma,
         tau=tau,
         delta_a=delta_a,
@@ -51,7 +48,6 @@ class LoCoConsensus:
         ts2,
         is_diagonal,
         l_min,
-        l_max,
         gamma,
         tau,
         delta_a,
@@ -64,7 +60,6 @@ class LoCoConsensus:
         self.is_diagonal = is_diagonal
         self.ts2 = ts2
         self.l_min = np.int32(l_min)
-        self.l_max = np.int32(l_max)
         self.step_sizes = step_sizes.astype(np.int32)
 
         self.gamma = gamma
@@ -78,8 +73,8 @@ class LoCoConsensus:
         self._mirrored_paths = None
 
         # global path logic
-        self.rstart = self.cstart_mir = global_offsets[offset_indices[0][0]]
-        self.cstart = self.rstart_mir = global_offsets[offset_indices[1][0]]
+        self.rstart = global_offsets[offset_indices[0][0]]
+        self.cstart = global_offsets[offset_indices[1][0]]
 
     def apply_loco(self):
         # apply LoCo
@@ -133,8 +128,8 @@ class LoCoConsensus:
             gpath[:, 0] = np.copy(path[:, 0]) + self.rstart
             gpath[:, 1] = np.copy(path[:, 1]) + self.cstart
             gpath_mir = np.zeros(path.shape, dtype=np.int32)
-            gpath_mir[:, 0] = np.copy(path[:, 1]) + self.rstart_mir
-            gpath_mir[:, 1] = np.copy(path[:, 0]) + self.cstart_mir
+            gpath_mir[:, 0] = np.copy(path[:, 1]) + self.cstart
+            gpath_mir[:, 1] = np.copy(path[:, 0]) + self.rstart
 
             if self.is_diagonal:
                 path_sims = self._sm[0][i, j]
@@ -144,6 +139,7 @@ class LoCoConsensus:
                 path_sims = self._sm[1][i, j]
                 self._paths.append(gpath_class.GlobalPath(gpath, path_sims))
                 mir_path_sims = self._sm[1].T[j, i]
+                assert np.array_equal(path_sims, mir_path_sims)
                 self._mirrored_paths.append(
                     gpath_class.GlobalPath(gpath_mir, mir_path_sims)
                 )

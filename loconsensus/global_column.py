@@ -32,12 +32,14 @@ class GlobalColumn:
             self._column_paths = typed.List()
         for path in paths:
             self._column_paths.append(path)
+        print(len(self._column_paths))
 
     def append_mpaths(self, mpaths):
         if self._column_paths is None:
             self._column_paths = typed.List()
         for mpath in mpaths:
             self._column_paths.append(mpath)
+        print(len(self._column_paths))
 
     def induced_paths(self, b, e, mask):
         induced_paths = []
