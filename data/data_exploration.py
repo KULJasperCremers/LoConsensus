@@ -39,8 +39,10 @@ for mt in motifs:
     cindex = find_timeseries_index(cs, goffsets)
     for i, motif in enumerate(mt[1]):
         ms, me = motif
+        """
         if cs == ms and ce == me:
             continue
+        """
         csim = mt[2][i]
         mindex = find_timeseries_index(ms, goffsets)
         sm[mindex][cindex] += csim
@@ -50,30 +52,23 @@ smax = sm.max()
 nm = (sm - smin) / (smax - smin)
 
 d = 1 - nm
-Z = linkage(d, method='average')
+Z = linkage(d, method='complete', optimal_ordering=True)
 
 labels = [
-    'w1',
-    'r1',
-    'c1',
-    'w2',
-    'r2',
-    'c2',
-    'w3',
-    #'w4',
-    #'c4',
-    #'w5',
-    #'r5',
-    #'c5',
-    #'w6',
-    #'r6',
-    #'c6',
-    #'w7',
-    #'r7',
-    #'c7',
-    #'w8',
-    #'r8',
-    #'c8',
+    'AT',
+    'DE',
+    'DK',
+    'GBGBN',
+    'GBUKM',
+    'GR',
+    'HR',
+    'HU',
+    'IT',
+    'LV',
+    'NO',
+    'PT',
+    'SE',
+    'SK',
 ]
 plt.figure(figsize=(25, len(labels) * 3))
 dendrogram(Z, labels=labels)

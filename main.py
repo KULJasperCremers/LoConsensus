@@ -4,7 +4,6 @@ import time
 from itertools import combinations_with_replacement
 from pathlib import Path
 
-import locomotif.locomotif as locomotif
 import locomotif.visualize as visualize
 import loconsensus.lococonsensus as lococonsensus
 import loconsensus.motifconsensus as motifconsensus
@@ -20,53 +19,30 @@ from constants import (
 from joblib import Parallel, delayed
 
 if __name__ == '__main__':
-    f = open('./data/mitdb_patient214.csv')
-    s = np.array([l.split(',') for l in f.readlines()], dtype=np.float32)
-    s = (s - np.mean(s, axis=0)) / np.std(s, axis=0)
-    print(len(s))
-    ts1 = s[:1800]
-    ts2 = s
-    fs = 360
-    L_MIN = int(0.6 * fs)
-    L_MAX = int(1 * fs)
-    ts_list = [ts1, ts2]
-    print(f'length ts_list: {len(ts_list)}')
+    ts_tups_file = Path('./data/osdp.pkl')
+    with ts_tups_file.open('rb') as f:
+        tups = pickle.load(f)
+
+    ts_list = []
+    labels = []
+    for tup in tups:
+        ts_list.append(tup[0])
+        labels.append(tup[1])
+
+    print(labels)
 
     vis = True
-
-    # to run LoCoMotif for comparison
-    loco = False
-    if loco:
-        l1 = locomotif.get_locomotif_instance(
-            ts1, l_min=L_MIN, l_max=L_MAX, rho=RHO, warping=True
-        )
-        l1.align()
-        p1 = l1.find_best_paths(vwidth=L_MIN // 2)
-        print(f'fp lcm: {len(p1)}')
-        fig, ax, _ = visualize.plot_sm(ts1, ts1, l1.get_ssm())
-        visualize.plot_local_warping_paths(ax, l1.get_paths())
-        plt.savefig('./plots/lmts1ts1.png')
-        plt.close()
-        motif = 0
-        motif_sets1 = []
-        for (b, e), motif_set, ips, _ in l1.find_best_motif_sets(nb=None, overlap=0.0):
-            motif_sets1.append(((b, e), motif_set, ips))
-            if vis:
-                fig, ax0, ax1_0 = visualize.plot_motifs(ts1, motif_set, ips, b, e)
-                plt.savefig(f'./plots/lcm_motifs_{motif}.png')
-                plt.close()
-            motif += 1
-        print(f'LoCoMotif: {len(motif_sets1)}')
 
     series_file = Path('./data/series.pkl')
     with series_file.open('wb') as f:
         pickle.dump(np.concatenate(ts_list), f)
+
     ts_lengths = [len(ts) for ts in ts_list]
     n = len(ts_list)
     offset_indices = utils.offset_indexer(n)
     # creates a np.array /w for each global index the cutoff point
     # e.g. [0, 1735, 2722, 3955] for n=3
-    global_offsets = np.cumsum([0] + ts_lengths)
+    global_offsets = np.cumsum([0] + ts_lengths, dtype=np.int32)
 
     total_comparisons = n * (n + 1) // 2
     print(f'Performing {total_comparisons} total comparisons.')
@@ -76,7 +52,7 @@ if __name__ == '__main__':
     # combinations_with_replacements returns self comparisons, e.g. (ts1, ts1)
     for cindex, (ts1, ts2) in enumerate(combinations_with_replacement(ts_list, 2)):
         lcc = lococonsensus.get_lococonsensus_instance(
-            ts1, ts2, global_offsets, offset_indices[cindex], L_MIN, RHO
+            ts1, ts2, global_offsets, offset_indices[cindex], L_MIN, RHO, cindex, n
         )
         lccs.append(lcc)
         args_list.append(lcc)
@@ -94,38 +70,11 @@ if __name__ == '__main__':
     print(f'Time LoCo: {outer_end_time - outer_start_time:.2f} seconds.')
 
     if vis:
-        label_fontsize = 50
-        label_fontweight = 'bold'
-        labels = ['(0,0)', '(0,1)', '(1,1)']
-        for comparison, lcc in enumerate(lccs):
+        for c, lcc in enumerate(lccs):
             fig, ax, _ = visualize.plot_sm(lcc.ts1, lcc.ts2, lcc.get_sm())
-            ax[3].text(
-                0.5,
-                0.5,
-                labels[comparison],
-                color='magenta',
-                fontsize=label_fontsize,
-                fontweight=label_fontweight,
-                ha='center',
-                va='center',
-                transform=ax[3].transAxes,
-            )
-            visualization.plot_local_warping_paths(
-                ax, lcc.get_paths(), comparison, global_offsets
-            )
-            plt.savefig(f'./plots/sm{comparison}.png')
+            ax = visualize.plot_local_warping_paths(ax, lcc.get_paths())
+            plt.savefig(f'./plots/smlwp{c}.png')
             plt.close()
-            # global_sm, ps = visualization.assemble_global_sm(
-            # ts_list, lccs, global_offsets
-            # )
-            # fig, ax = visualization.plot_global_sm(global_sm, global_offsets, ts_list)
-            # plt.savefig('./plots/gsm.png')
-            # plt.close()
-            # fig, ax = visualization.plot_ut_with_lwp(
-            # global_sm, global_offsets, ts_list, ps
-            # )
-            # plt.savefig('./plots/gsmlwp.png')
-            # plt.close()
 
     mc = motifconsensus.get_motifconsensus_instance(
         n, global_offsets, L_MIN, L_MAX, lccs
@@ -157,8 +106,9 @@ if __name__ == '__main__':
     if vis:
         for i, motif_set in enumerate(motif_sets2):
             (b, e), motifs, _, ips, _ = motif_set
-            fig, ax0, ax1_0 = visualize.plot_motifs(
-                np.concatenate(ts_list), motifs, ips, b, e
-            )
-            plt.savefig(f'./plots/lcc_motifs_{i}.png')
-            plt.close()
+            if len(motifs) < 50:
+                fig, ax0, ax1_0 = visualize.plot_motifs(
+                    np.concatenate(ts_list), motifs, ips, b, e
+                )
+                plt.savefig(f'./plots/lcc_motifs_{i}.png')
+                plt.close()

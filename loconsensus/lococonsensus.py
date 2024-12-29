@@ -1,11 +1,15 @@
 import loconsensus.global_path as gpath_class
 import numpy as np
 from numba import boolean, float32, float64, int32, njit, typed, types
+from utils import row_col_from_cindex
 
 
-def get_lococonsensus_instance(ts1, ts2, global_offsets, offset_indices, l_min, rho):
+def get_lococonsensus_instance(
+    ts1, ts2, global_offsets, offset_indices, l_min, rho, cindex, n
+):
     is_diagonal = False
-    if np.array_equal(ts1, ts2):
+    r, c = row_col_from_cindex(cindex, n)
+    if r == c:
         is_diagonal = True
     ts1 = np.array(ts1, dtype=np.float32)
     ts2 = np.array(ts2, dtype=np.float32)
@@ -72,9 +76,8 @@ class LoCoConsensus:
         self._paths = None
         self._mirrored_paths = None
 
-        # global path logic
-        self.rstart = global_offsets[offset_indices[0][0]]
-        self.cstart = global_offsets[offset_indices[1][0]]
+        self.rstart = global_offsets[offset_indices[0]]
+        self.cstart = global_offsets[offset_indices[1]]
 
     def apply_loco(self):
         # apply LoCo
@@ -109,7 +112,6 @@ class LoCoConsensus:
         found_paths = _find_best_paths(
             self._csm, mask, l_min=self.l_min, vwidth=vwidth, step_sizes=self.step_sizes
         )
-        print(f'fp: {len(found_paths)}')
 
         self._paths = typed.List()
 
@@ -128,24 +130,31 @@ class LoCoConsensus:
             gpath[:, 0] = np.copy(path[:, 0]) + self.rstart
             gpath[:, 1] = np.copy(path[:, 1]) + self.cstart
             gpath_mir = np.zeros(path.shape, dtype=np.int32)
-            gpath_mir[:, 0] = np.copy(path[:, 1]) + self.cstart
-            gpath_mir[:, 1] = np.copy(path[:, 0]) + self.rstart
 
             if self.is_diagonal:
                 path_sims = self._sm[0][i, j]
                 self._paths.append(gpath_class.GlobalPath(gpath, path_sims))
+                gpath_mir[:, 0] = np.copy(path[:, 1]) + self.rstart
+                gpath_mir[:, 1] = np.copy(path[:, 0]) + self.rstart
                 self._paths.append(gpath_class.GlobalPath(gpath_mir, path_sims))
             else:
                 path_sims = self._sm[1][i, j]
                 self._paths.append(gpath_class.GlobalPath(gpath, path_sims))
                 mir_path_sims = self._sm[1].T[j, i]
-                assert np.array_equal(path_sims, mir_path_sims)
+                gpath_mir[:, 0] = np.copy(path[:, 1]) + self.cstart
+                gpath_mir[:, 1] = np.copy(path[:, 0]) + self.rstart
                 self._mirrored_paths.append(
                     gpath_class.GlobalPath(gpath_mir, mir_path_sims)
                 )
 
     def get_paths(self):
-        return [path.path - [self.rstart, self.cstart] for path in self._paths]
+        # return [path.path - [self.rstart, self.cstart] for path in self._paths]
+        if self._mirrored_paths is not None:
+            paths = [path.path for path in self._paths]
+            paths += [path.path for path in self._mirrored_paths]
+            return paths
+        else:
+            return [path.path for path in self._paths]
 
     def get_sm(self):
         sm = self._sm[0] if self.is_diagonal else self._sm[1]

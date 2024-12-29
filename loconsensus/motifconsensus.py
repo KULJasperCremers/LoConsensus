@@ -10,16 +10,19 @@ def get_motifconsensus_instance(n, global_offsets, l_min, l_max, lccs):
     for column_index in range(n):
         gcs.append(GlobalColumn(column_index, global_offsets, l_min, l_max))
 
-    coffset = -1
-    for lcc in lccs:
-        if lcc.is_diagonal:
-            coffset += 1
-            gcs[coffset].append_paths(lcc._paths)
-            gcolumn = coffset
-        else:
-            gcs[gcolumn].append_mpaths(lcc._mirrored_paths)
-            gcolumn += 1
-            gcs[gcolumn].append_paths(lcc._paths)
+    i = 0
+    for r in range(n):
+        for c in range(r, n):
+            lcc = lccs[i]
+            i += 1
+
+            if r == c:
+                gcs[r].append_paths(lcc._paths)
+            else:
+                gcs[c].append_paths(lcc._paths)
+                if lcc._mirrored_paths:
+                    gcs[r].append_paths(lcc._mirrored_paths)
+
     return MotifConsensus(global_offsets, gcs)
 
 
@@ -30,6 +33,13 @@ class MotifConsensus:
         self.ccs = [None] * len(global_columns)
 
     def apply_motif(self, nb, overlap):
+        for i, c in enumerate(self.global_columns):
+            paths = c._column_paths
+            print(f'c{i}: len paths {len(paths)}')
+            # for p in paths:
+            # print(f'gi1: {p.gi1} // gil: {p.gil}')
+            # print(f'gi1: {p.gj1} // gil: {p.gjl}')
+        print()
         smask = np.full(self.global_offsets[-1], True)
         emask = np.full(self.global_offsets[-1], True)
         mask = np.full(self.global_offsets[-1], False)
@@ -77,14 +87,11 @@ class MotifConsensus:
                 break
 
             b, e = best_candidate
-            print(f'({b},{e}), bf: {best_fitness}')
             gc = self.global_columns[best_cindex]
             ips, csims = gc.induced_paths(b, e, mask)
-            print(f'ip: {len(ips)}')
             motif_set = vertical_projections(ips)
             for bm, em in motif_set:
-                ml = em - bm
-                mask[bm + int(overlap * ml) - 1 : em - int(overlap * ml)] = True
+                mask[bm - 1 : em] = True
 
             for cindex, cc in enumerate(self.ccs):
                 if cindex == best_cindex or not cc:
@@ -110,3 +117,7 @@ def _process_candidate(args):
 
 def vertical_projections(paths):
     return [(p[0][0], p[len(p) - 1][0] + 1) for p in paths]
+
+
+def vertical_projection(path):
+    return (path[0][0], path[len(path) - 1][0] + 1)

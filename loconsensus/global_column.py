@@ -22,6 +22,7 @@ class GlobalColumn:
             self._column_paths,
             self.l_min,
             self.l_max,
+            self.global_offsets,
             overlap,
             keep_fitnesses,
         )
@@ -32,18 +33,17 @@ class GlobalColumn:
             self._column_paths = typed.List()
         for path in paths:
             self._column_paths.append(path)
-        print(len(self._column_paths))
 
     def append_mpaths(self, mpaths):
         if self._column_paths is None:
             self._column_paths = typed.List()
         for mpath in mpaths:
             self._column_paths.append(mpath)
-        print(len(self._column_paths))
 
     def induced_paths(self, b, e, mask):
         induced_paths = []
         csims = []
+
         for p in self._column_paths:
             if p.gj1 <= b and e <= p.gjl:
                 kb, ke = p.find_gj(b), p.find_gj(e - 1)
@@ -64,6 +64,7 @@ class GlobalColumn:
         types.ListType(gpath_class.GlobalPath.class_type.instance_type),  # type:ignore
         int32,
         int32,
+        int32[:],
         float64,
         boolean,
     )
@@ -75,7 +76,8 @@ def _find_best_candidate(
     paths,
     l_min,
     l_max,
-    overlap=0.0,
+    global_offsets,
+    overlap=0,
     keep_fitnesses=False,
 ):
     fitnesses = []
@@ -153,9 +155,25 @@ def _find_best_candidate(
             if np.any(overlaps > overlap * len_[:-1]):
                 continue
 
-            # Calculate normalized coverage
             coverage = np.sum(es_ - bs_) - np.sum(overlaps)
             n_coverage = coverage / float(n)
+
+            cols = np.zeros(len(bs_))
+            for i, start in enumerate(bs_):
+                for gc in range(len(global_offsets) - 1):
+                    if start >= global_offsets[gc] and start <= global_offsets[gc + 1]:
+                        cols[i] = gc
+                        break
+
+            bc = 0
+            for gc in range(len(global_offsets) - 1):
+                if b >= global_offsets[gc] and b < global_offsets[gc + 1]:
+                    bc = gc
+                    break
+
+            unique_cols = np.unique(cols)
+            diff_cols = unique_cols[unique_cols != bc]
+            col_div = len(diff_cols) / (len(global_offsets) - 1)
 
             # Calculate normalized score
             score = 0
@@ -163,13 +181,11 @@ def _find_best_candidate(
                 score += paths[p].cumsim[kes[p] + 1] - paths[p].cumsim[kbs[p]]
             n_score = score / float(np.sum(kes[pmask] - kbs[pmask] + 1))
 
+            w1, w2, w3 = 0.5, 0.5, 0.0
             # Calculate the fitness value
             fit = 0.0
-            """
             if n_coverage != 0 or n_score != 0:
-                fit = 2 * (n_coverage * n_score) / (n_coverage + n_score)
-            """
-            fit = n_score
+                fit = (w1 * n_coverage + w2 * n_score + w3 * col_div) / (w1 + w2 + w3)
 
             if fit == 0.0:
                 continue
@@ -182,7 +198,6 @@ def _find_best_candidate(
             # Store fitness if necessary
             if keep_fitnesses:
                 fitnesses.append((b, e, fit, n_coverage, n_score))
-                # fitnesses.append((b, e, fit, n_score))
 
     fitnesses = (
         np.array(fitnesses, dtype=np.float32)
