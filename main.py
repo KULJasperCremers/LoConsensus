@@ -19,19 +19,32 @@ from constants import (
 from joblib import Parallel, delayed
 
 if __name__ == '__main__':
-    ts_tups_file = Path('./data/osdp.pkl')
-    with ts_tups_file.open('rb') as f:
-        tups = pickle.load(f)
+    data_file = Path('./data/subjects.pkl')
+    with data_file.open('rb') as f:
+        subjects = pickle.load(f)  # downsampled by factor 10 to 10 hz
 
-    ts_list = []
-    labels = []
-    for tup in tups:
-        ts_list.append(tup[0])
-        labels.append(tup[1])
+    subject101 = subjects.get('subject101')
+    subject102 = subjects.get('subject102')
+    subject103 = subjects.get('subject103')
 
-    print(labels)
+    ts1 = subject101.get('walking')[250:750]
+    ts11 = subject101.get('walking')[1250:1750]
+    ts2 = subject101.get('running')[250:750]
+    ts21 = subject101.get('running')[1250:1750]
+    ts3 = subject101.get('cycling')[250:750]
+    ts31 = subject101.get('cycling')[1250:1750]
+    ts4 = subject102.get('walking')[250:750]
+    ts41 = subject102.get('walking')[1250:1750]
+    ts5 = subject102.get('cycling')[250:750]
+    ts51 = subject102.get('cycling')[1250:1750]
+    ts6 = subject103.get('walking')[250:750]
+    ts61 = subject103.get('walking')[1250:1750]
 
-    vis = True
+    # ts_list = [ts1, ts2]
+    # ts_list = [ts1, ts2, ts3, ts4, ts5, ts6]
+    ts_list = [ts1, ts2, ts3, ts4, ts5, ts6, ts11, ts21, ts31, ts41, ts51, ts61]
+
+    vis = False
 
     series_file = Path('./data/series.pkl')
     with series_file.open('wb') as f:

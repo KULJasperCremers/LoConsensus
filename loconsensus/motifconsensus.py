@@ -59,8 +59,7 @@ class MotifConsensus:
             args_list = []
             for cindex, gc in enumerate(self.global_columns):
                 if not self.ccs[cindex]:
-                    s, e = gc.start_offset, gc.end_offset
-                    args = (cindex, gc, smask[s:e], emask[s:e], mask, overlap, False)
+                    args = (cindex, gc, smask, emask, mask, overlap, False)
                     args_list.append(args)
 
             results = Parallel(n_jobs=num_threads, backend='threading')(
@@ -91,7 +90,8 @@ class MotifConsensus:
             ips, csims = gc.induced_paths(b, e, mask)
             motif_set = vertical_projections(ips)
             for bm, em in motif_set:
-                mask[bm - 1 : em] = True
+                l = em - bm
+                mask[bm + int(overlap * l) - 1 : em - int(overlap * l)] = True
 
             for cindex, cc in enumerate(self.ccs):
                 if cindex == best_cindex or not cc:

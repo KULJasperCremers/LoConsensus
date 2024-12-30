@@ -78,10 +78,10 @@ for subject_file in subject_files:
     hand_x = df.values[:, 4]
     # hand_y = df.values[:, 5]
     # hand_z = df.values[:, 6]
-    # chest_x = df.values[:, 21]
+    chest_x = df.values[:, 21]
     # chest_y = df.values[:, 22]
     # chest_z = df.values[:, 23]
-    # ankle_x = df.values[:, 38]
+    ankle_x = df.values[:, 38]
     # ankle_y = df.values[:, 39]
     # ankle_z = df.values[:, 40]
 
@@ -109,18 +109,22 @@ for subject_file in subject_files:
                 hand_z_proc = z_normalize(
                     downsample_decimate(interpolate(hand_z[start:end]))
                 )
+                """
                 chest_x_proc = z_normalize(
                     downsample_decimate(interpolate(chest_x[start:end]))
                 )
+                """
                 chest_y_proc = z_normalize(
                     downsample_decimate(interpolate(chest_y[start:end]))
                 )
                 chest_z_proc = z_normalize(
                     downsample_decimate(interpolate(chest_z[start:end]))
                 )
+                """
                 ankle_x_proc = z_normalize(
                     downsample_decimate(interpolate(ankle_x[start:end]))
                 )
+                """
                 ankle_y_proc = z_normalize(
                     downsample_decimate(interpolate(ankle_y[start:end]))
                 )
@@ -133,10 +137,10 @@ for subject_file in subject_files:
                         hand_x_proc,
                         # hand_y_proc,
                         # hand_z_proc,
-                        # chest_x_proc,
+                        chest_x_proc,
                         # chest_y_proc,
                         # chest_z_proc,
-                        # ankle_x_proc,
+                        ankle_x_proc,
                         # ankle_y_proc,
                         # ankle_z_proc,
                     )
